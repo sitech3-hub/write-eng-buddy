@@ -170,6 +170,46 @@ function getMessageText(m: UIMessage) {
   return m.parts.map((p) => (p.type === "text" ? p.text : "")).join("");
 }
 
+// Help keywords — if present, the message is a help request, NOT an English attempt
+const HELP_KEYWORDS = [
+  "도와", "도와줘", "도와주세요", "힌트", "hint",
+  "모르겠", "모르겠어", "모르겠어요",
+  "어려", "어려워", "어려워요", "어렵",
+  "못 쓰", "못쓰", "못하겠", "막혀", "막혔",
+  "다음", "next", "계속",
+];
+
+/**
+ * Heuristic: does this user message look like a real English writing attempt?
+ * We want to reset scaffolding ONLY when the student has genuinely tried to
+ * write English — not when they sprinkle a word like "hint" or "ok" into a
+ * Korean help request.
+ *
+ * Rules (all must hold):
+ *  - message does not match any help keyword
+ *  - contains ≥ 3 English word tokens (2+ letters each)
+ *  - English characters dominate over Korean (Korean ratio < 0.3)
+ */
+function looksLikeEnglishAttempt(raw: string): boolean {
+  const text = raw.trim();
+  if (!text) return false;
+
+  const lower = text.toLowerCase();
+  if (HELP_KEYWORDS.some((kw) => lower.includes(kw.toLowerCase()))) return false;
+
+  const englishWords = text.match(/[A-Za-z]{2,}/g) ?? [];
+  if (englishWords.length < 3) return false;
+
+  const koreanChars = text.match(/[\uAC00-\uD7AF]/g)?.length ?? 0;
+  const englishChars = text.match(/[A-Za-z]/g)?.length ?? 0;
+  const totalLetters = koreanChars + englishChars;
+  if (totalLetters === 0) return false;
+  const koreanRatio = koreanChars / totalLetters;
+  if (koreanRatio >= 0.3) return false;
+
+  return true;
+}
+
 function computeScaffoldStage(messages: UIMessage[]): 0 | 1 | 2 | 3 | 4 {
   let stage: 0 | 1 | 2 | 3 | 4 = 0;
   for (const m of messages) {
@@ -183,9 +223,8 @@ function computeScaffoldStage(messages: UIMessage[]): 0 | 1 | 2 | 3 | 4 {
         }
       }
     } else if (m.role === "user") {
-      // reset if the student writes English (≥3 consecutive letters)
-      const text = getMessageText(m);
-      if (/[A-Za-z]{3,}/.test(text)) stage = 0;
+      // only reset when the student has actually attempted English writing
+      if (looksLikeEnglishAttempt(getMessageText(m))) stage = 0;
     }
   }
   return stage;
