@@ -158,3 +158,70 @@ function MessageRow({ message }: { message: UIMessage }) {
     </div>
   );
 }
+
+const STAGE_MARKERS: Array<{ stage: 1 | 2 | 3 | 4; icon: string; label: string }> = [
+  { stage: 1, icon: "🧱", label: "핵심 표현" },
+  { stage: 2, icon: "🪜", label: "문장 뼈대" },
+  { stage: 3, icon: "🌱", label: "함께 한 문장" },
+  { stage: 4, icon: "🤝", label: "모범 단락 + 빈칸" },
+];
+
+function getMessageText(m: UIMessage) {
+  return m.parts.map((p) => (p.type === "text" ? p.text : "")).join("");
+}
+
+function computeScaffoldStage(messages: UIMessage[]): 0 | 1 | 2 | 3 | 4 {
+  let stage: 0 | 1 | 2 | 3 | 4 = 0;
+  for (const m of messages) {
+    if (m.role === "assistant") {
+      const text = getMessageText(m);
+      // pick the highest stage marker present in this assistant message
+      for (let i = STAGE_MARKERS.length - 1; i >= 0; i--) {
+        if (text.includes(STAGE_MARKERS[i].icon)) {
+          stage = STAGE_MARKERS[i].stage;
+          break;
+        }
+      }
+    } else if (m.role === "user") {
+      // reset if the student writes English (≥3 consecutive letters)
+      const text = getMessageText(m);
+      if (/[A-Za-z]{3,}/.test(text)) stage = 0;
+    }
+  }
+  return stage;
+}
+
+function ScaffoldIndicator({ stage }: { stage: 0 | 1 | 2 | 3 | 4 }) {
+  return (
+    <div className="border-b bg-muted/30">
+      <div className="mx-auto flex w-full max-w-3xl items-center gap-2 px-4 py-2 sm:px-6">
+        <span className="text-xs font-medium text-muted-foreground">비계 단계</span>
+        <div className="flex flex-1 items-center gap-1.5">
+          {STAGE_MARKERS.map((s) => {
+            const active = stage === s.stage;
+            const done = stage > s.stage;
+            return (
+              <div
+                key={s.stage}
+                className={cn(
+                  "flex flex-1 items-center gap-1 rounded-md px-2 py-1 text-xs transition-colors",
+                  active && "bg-primary text-primary-foreground",
+                  done && "bg-primary/15 text-primary",
+                  !active && !done && "bg-transparent text-muted-foreground",
+                )}
+                title={`${s.stage}단계 — ${s.label}`}
+              >
+                <span>{s.icon}</span>
+                <span className="hidden sm:inline">{s.stage}. {s.label}</span>
+                <span className="sm:hidden">{s.stage}</span>
+              </div>
+            );
+          })}
+        </div>
+        {stage === 0 && (
+          <span className="text-xs text-muted-foreground">시작 전</span>
+        )}
+      </div>
+    </div>
+  );
+}
