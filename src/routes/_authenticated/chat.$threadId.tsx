@@ -265,3 +265,82 @@ function ScaffoldIndicator({ stage }: { stage: 0 | 1 | 2 | 3 | 4 }) {
     </div>
   );
 }
+
+const EXERCISE_LABEL: Record<string, string> = {
+  free: "자유 작문",
+  diary: "영어 일기",
+  email: "영어 이메일",
+  opinion: "의견 쓰기",
+  prompt: "AI 주제 작문",
+};
+
+/**
+ * Pull the student's own writing out of the chat — only messages that look
+ * like real English attempts (not "도와줘" / "모르겠어" style help requests).
+ */
+function extractStudentWriting(messages: UIMessage[]): string[] {
+  const out: string[] = [];
+  for (const m of messages) {
+    if (m.role !== "user") continue;
+    const text = getMessageText(m).trim();
+    if (!text) continue;
+    if (!looksLikeEnglishAttempt(text)) continue;
+    out.push(text);
+  }
+  return out;
+}
+
+function ChatToolbar({
+  messages,
+  threadId,
+  exerciseType,
+}: {
+  messages: UIMessage[];
+  threadId: string;
+  exerciseType?: string;
+}) {
+  const entries = useMemo(() => extractStudentWriting(messages), [messages]);
+  const count = entries.length;
+  const wordCount = useMemo(
+    () => entries.reduce((sum, t) => sum + (t.match(/[A-Za-z]+/g)?.length ?? 0), 0),
+    [entries],
+  );
+
+  const handleDownload = () => {
+    if (count === 0) return;
+    const label = EXERCISE_LABEL[exerciseType ?? "free"] ?? "영어 쓰기";
+    const date = new Date();
+    const stamp = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    const header = `# ${label} — 내가 쓴 글\n날짜: ${stamp}\n총 ${count}개 항목 · 약 ${wordCount} 단어\n\n---\n\n`;
+    const body = entries.map((t, i) => `## ${i + 1}.\n${t}`).join("\n\n");
+    const blob = new Blob([header + body + "\n"], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `my-writing-${stamp}-${threadId.slice(0, 8)}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="border-b bg-background">
+      <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-2 px-4 py-2 sm:px-6">
+        <span className="text-xs text-muted-foreground">
+          내가 쓴 영어 {count}문장{wordCount > 0 ? ` · 약 ${wordCount} 단어` : ""}
+        </span>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleDownload}
+          disabled={count === 0}
+          className="h-8 gap-1.5 text-xs"
+        >
+          <Download className="h-3.5 w-3.5" />
+          내 글 다운로드
+        </Button>
+      </div>
+    </div>
+  );
+}
