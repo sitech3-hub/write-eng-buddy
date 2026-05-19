@@ -129,6 +129,16 @@ function NewPracticePage() {
           {loading ? "시작 중..." : "연습 시작하기"}
         </Button>
       </section>
+
+      <PlacementQuiz
+        open={quizOpen}
+        onOpenChange={setQuizOpen}
+        onApply={(lv) => {
+          setLevel(lv);
+          setRecommended(lv);
+          toast.success("추천 레벨이 적용됐어요");
+        }}
+      />
     </div>
   );
 }
