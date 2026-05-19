@@ -60,7 +60,7 @@ const TYPE_LABEL: Record<string, string> = {
 };
 
 function buildSystemPrompt(level?: string, type?: string) {
-  const lv = LEVEL_LABEL[level ?? "middle3"] ?? LEVEL_LABEL.middle3;
+  const profile = LEVEL_PROFILE[level ?? "middle3"] ?? LEVEL_PROFILE.middle3;
   const tp = TYPE_LABEL[type ?? "free"] ?? TYPE_LABEL.free;
 
   const typeKickoff: Record<string, string> = {
