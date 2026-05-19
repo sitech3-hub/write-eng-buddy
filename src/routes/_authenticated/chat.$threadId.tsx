@@ -295,9 +295,22 @@ const KICKOFF_BY_TYPE: Record<string, string> = {
   prompt: "안녕하세요! 흥미로운 영어 작문 주제를 하나 골라서 제시해 주세요.",
 };
 
-function kickoffMessageFor(type?: string) {
-  return KICKOFF_BY_TYPE[type ?? "free"] ?? KICKOFF_BY_TYPE.free;
+const LEVEL_LABEL_FOR_KICKOFF: Record<string, string> = {
+  middle1: "중학교 1학년 (CEFR A1)",
+  middle2: "중학교 2학년 (CEFR A1–A2)",
+  middle3: "중학교 3학년 (CEFR A2)",
+  high1: "고등학교 1학년 (CEFR A2–B1)",
+  high2: "고등학교 2학년 (CEFR B1)",
+  high3: "고등학교 3학년 (CEFR B1–B2)",
+};
+
+function kickoffMessageFor(type?: string, level?: string) {
+  const base = KICKOFF_BY_TYPE[type ?? "free"] ?? KICKOFF_BY_TYPE.free;
+  const lv = LEVEL_LABEL_FOR_KICKOFF[level ?? ""] ?? null;
+  if (!lv) return base;
+  return `${base}\n\n제 수준은 **${lv}**이에요. 주제 난이도, 어휘, 예문, 글의 길이까지 모두 이 수준에 맞춰 주세요.`;
 }
+
 
 /**
  * Pull the student's own writing out of the chat.
