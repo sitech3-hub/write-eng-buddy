@@ -13,8 +13,12 @@ export const Route = createFileRoute("/_authenticated/chat/")({
 });
 
 const LEVELS = [
-  { value: "middle3", label: "중학교 3학년" },
-  { value: "high1", label: "고등학교 1학년" },
+  { value: "middle1", label: "중학교 1학년", cefr: "A1", desc: "기초 영어 (Beginner)" },
+  { value: "middle2", label: "중학교 2학년", cefr: "A1–A2", desc: "기초~초급" },
+  { value: "middle3", label: "중학교 3학년", cefr: "A2", desc: "초급 (Elementary)" },
+  { value: "high1", label: "고등학교 1학년", cefr: "A2–B1", desc: "초급~중급" },
+  { value: "high2", label: "고등학교 2학년", cefr: "B1", desc: "중급 (Intermediate)" },
+  { value: "high3", label: "고등학교 3학년", cefr: "B1–B2", desc: "중급~중상급" },
 ];
 const TYPES = [
   { value: "free", label: "자유 작문", desc: "원하는 주제로 자유롭게" },
@@ -58,18 +62,23 @@ function NewPracticePage() {
 
       <section className="w-full space-y-6">
         <div>
-          <h2 className="mb-3 text-sm font-medium">학습 레벨</h2>
-          <div className="grid grid-cols-2 gap-2">
+          <h2 className="mb-1 text-sm font-medium">학습 레벨</h2>
+          <p className="mb-3 text-xs text-muted-foreground">학년에 따른 CEFR 수준에 맞춰 난이도가 조정돼요.</p>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {LEVELS.map((l) => (
               <button
                 key={l.value}
                 onClick={() => setLevel(l.value)}
                 className={cn(
-                  "rounded-xl border px-4 py-3 text-sm transition",
+                  "rounded-xl border px-3 py-3 text-left text-sm transition",
                   level === l.value ? "border-primary bg-primary/5 text-foreground" : "border-border hover:border-primary/50"
                 )}
               >
-                {l.label}
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-medium">{l.label}</span>
+                  <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">{l.cefr}</span>
+                </div>
+                <div className="mt-0.5 text-xs text-muted-foreground">{l.desc}</div>
               </button>
             ))}
           </div>

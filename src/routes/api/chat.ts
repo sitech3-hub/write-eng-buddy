@@ -12,9 +12,43 @@ type ChatBody = {
   exerciseType?: string;
 };
 
-const LEVEL_LABEL: Record<string, string> = {
-  middle3: "한국 중학교 3학년",
-  high1: "한국 고등학교 1학년",
+const LEVEL_PROFILE: Record<string, { label: string; cefr: string; guidance: string }> = {
+  middle1: {
+    label: "한국 중학교 1학년",
+    cefr: "A1 (Beginner)",
+    guidance:
+      "기초 어휘(약 600~800단어), 현재형/be동사/일반동사 위주. 한 문장은 5~8단어 정도, 시제는 현재형 중심. 어려운 관용표현·접속사는 피하고, 같은 패턴을 반복해 익숙해지게 한다.",
+  },
+  middle2: {
+    label: "한국 중학교 2학년",
+    cefr: "A1–A2",
+    guidance:
+      "기초~초급 어휘(약 1,000단어). 현재/과거 시제, 간단한 조동사(can, will), 등위접속사(and, but, so) 사용. 문장 길이 6~10단어 권장.",
+  },
+  middle3: {
+    label: "한국 중학교 3학년",
+    cefr: "A2 (Elementary)",
+    guidance:
+      "초급 어휘(약 1,500단어). 현재/과거/미래 시제, 비교급, to부정사·동명사 기초. 2~3문장 단락 구성 연습. 복잡한 종속절은 1개까지만.",
+  },
+  high1: {
+    label: "한국 고등학교 1학년",
+    cefr: "A2–B1",
+    guidance:
+      "초·중급 어휘(약 2,000단어). 현재완료, 수동태, 관계대명사(who/which/that) 기초 도입. 3~5문장 단락. 의견을 짧게 표현하는 연결어(however, because, for example) 권장.",
+  },
+  high2: {
+    label: "한국 고등학교 2학년",
+    cefr: "B1 (Intermediate)",
+    guidance:
+      "중급 어휘(약 2,500~3,000단어). 다양한 시제, 관계사, 가정법 기초, 분사구문 입문. 단락 구성(주제문→근거→예시→마무리) 적극 안내.",
+  },
+  high3: {
+    label: "한국 고등학교 3학년",
+    cefr: "B1–B2",
+    guidance:
+      "중상급 어휘(약 3,500단어). 가정법, 도치, 분사구문, 추상명사 활용. 논리적 단락(서론-본론-결론) 및 학술적 톤(academic register) 연습. 수능·내신 서술형 수준의 정확성 강조.",
+  },
 };
 
 const TYPE_LABEL: Record<string, string> = {
@@ -26,7 +60,7 @@ const TYPE_LABEL: Record<string, string> = {
 };
 
 function buildSystemPrompt(level?: string, type?: string) {
-  const lv = LEVEL_LABEL[level ?? "middle3"] ?? LEVEL_LABEL.middle3;
+  const profile = LEVEL_PROFILE[level ?? "middle3"] ?? LEVEL_PROFILE.middle3;
   const tp = TYPE_LABEL[type ?? "free"] ?? TYPE_LABEL.free;
 
   const typeKickoff: Record<string, string> = {
@@ -63,8 +97,12 @@ function buildSystemPrompt(level?: string, type?: string) {
   };
   const kickoff = typeKickoff[type ?? "free"] ?? typeKickoff.free;
 
-  return `너는 ${lv} 학생을 위한 친절한 영어 쓰기 튜터다.
+  return `너는 ${profile.label} 학생을 위한 친절한 영어 쓰기 튜터다.
+학습자 CEFR 수준: **${profile.cefr}**.
+수준별 지침: ${profile.guidance}
 연습 유형: ${tp}.
+
+위 CEFR 수준을 반드시 지켜라. 모범 답안·예문·교정문은 이 수준의 어휘와 문법 범위 안에서 작성하고, 수준을 넘는 표현을 쓸 때는 한국어로 짧게 풀어 설명한다.
 
 ## 대화 시작 규칙 (학생의 첫 메시지가 인사/시작 요청일 때)
 한국어로 짧게 환영한 뒤, 아래 유형 전용 형식대로 **주제를 먼저 제시**하고 대화를 이끈다. 다른 유형의 포맷을 섞지 않는다.
