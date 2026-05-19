@@ -437,9 +437,27 @@ function ChatToolbar({
           <DialogHeader>
             <DialogTitle>내 글 미리보기</DialogTitle>
             <DialogDescription>
-              저장할 문장을 선택하세요. 도움 요청 메시지는 자동으로 제외되어 있습니다.
+              저장할 문장을 선택하세요. 도움 요청 메시지 자동 제외를 켜고 끌 수 있어요.
             </DialogDescription>
           </DialogHeader>
+
+          <div className="flex items-center justify-between gap-3 rounded-md border bg-muted/30 px-3 py-2">
+            <div className="flex flex-col">
+              <Label htmlFor="exclude-help" className="text-sm cursor-pointer">
+                도움 요청 문장 자동 제외
+              </Label>
+              <span className="text-xs text-muted-foreground">
+                {excludeHelp
+                  ? "‘도와줘’, ‘모르겠어’ 같은 메시지를 숨깁니다."
+                  : "모든 학생 메시지를 포함합니다."}
+              </span>
+            </div>
+            <Switch
+              id="exclude-help"
+              checked={excludeHelp}
+              onCheckedChange={(v) => setExcludeHelp(Boolean(v))}
+            />
+          </div>
 
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>
