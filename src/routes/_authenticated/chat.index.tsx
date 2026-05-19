@@ -35,6 +35,8 @@ function NewPracticePage() {
   const [level, setLevel] = useState("middle3");
   const [type, setType] = useState("free");
   const [loading, setLoading] = useState(false);
+  const [quizOpen, setQuizOpen] = useState(false);
+  const [recommended, setRecommended] = useState<string | null>(null);
 
   const start = async () => {
     setLoading(true);
