@@ -62,18 +62,23 @@ function NewPracticePage() {
 
       <section className="w-full space-y-6">
         <div>
-          <h2 className="mb-3 text-sm font-medium">학습 레벨</h2>
-          <div className="grid grid-cols-2 gap-2">
+          <h2 className="mb-1 text-sm font-medium">학습 레벨</h2>
+          <p className="mb-3 text-xs text-muted-foreground">학년에 따른 CEFR 수준에 맞춰 난이도가 조정돼요.</p>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {LEVELS.map((l) => (
               <button
                 key={l.value}
                 onClick={() => setLevel(l.value)}
                 className={cn(
-                  "rounded-xl border px-4 py-3 text-sm transition",
+                  "rounded-xl border px-3 py-3 text-left text-sm transition",
                   level === l.value ? "border-primary bg-primary/5 text-foreground" : "border-border hover:border-primary/50"
                 )}
               >
-                {l.label}
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-medium">{l.label}</span>
+                  <span className="rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">{l.cefr}</span>
+                </div>
+                <div className="mt-0.5 text-xs text-muted-foreground">{l.desc}</div>
               </button>
             ))}
           </div>
