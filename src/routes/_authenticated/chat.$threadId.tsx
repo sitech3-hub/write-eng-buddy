@@ -284,16 +284,16 @@ const EXERCISE_LABEL: Record<string, string> = {
 };
 
 /**
- * Pull the student's own writing out of the chat — only messages that look
- * like real English attempts (not "도와줘" / "모르겠어" style help requests).
+ * Pull the student's own writing out of the chat.
+ * When `excludeHelp` is true, filter out "도와줘" / "모르겠어" style help requests.
  */
-function extractStudentWriting(messages: UIMessage[]): string[] {
+function extractStudentWriting(messages: UIMessage[], excludeHelp: boolean): string[] {
   const out: string[] = [];
   for (const m of messages) {
     if (m.role !== "user") continue;
     const text = getMessageText(m).trim();
     if (!text) continue;
-    if (!looksLikeEnglishAttempt(text)) continue;
+    if (excludeHelp && !looksLikeEnglishAttempt(text)) continue;
     out.push(text);
   }
   return out;
@@ -308,7 +308,11 @@ function ChatToolbar({
   threadId: string;
   exerciseType?: string;
 }) {
-  const entries = useMemo(() => extractStudentWriting(messages), [messages]);
+  const [excludeHelp, setExcludeHelp] = useState(true);
+  const entries = useMemo(
+    () => extractStudentWriting(messages, excludeHelp),
+    [messages, excludeHelp],
+  );
   const count = entries.length;
   const totalWordCount = useMemo(
     () => entries.reduce((sum, t) => sum + (t.match(/[A-Za-z]+/g)?.length ?? 0), 0),
