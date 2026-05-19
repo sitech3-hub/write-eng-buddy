@@ -2,11 +2,12 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Sparkles } from "lucide-react";
+import { Sparkles, ClipboardCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { PlacementQuiz } from "@/components/PlacementQuiz";
 
 export const Route = createFileRoute("/_authenticated/chat/")({
   component: NewPracticePage,
@@ -34,6 +35,8 @@ function NewPracticePage() {
   const [level, setLevel] = useState("middle3");
   const [type, setType] = useState("free");
   const [loading, setLoading] = useState(false);
+  const [quizOpen, setQuizOpen] = useState(false);
+  const [recommended, setRecommended] = useState<string | null>(null);
 
   const start = async () => {
     setLoading(true);
@@ -62,8 +65,27 @@ function NewPracticePage() {
 
       <section className="w-full space-y-6">
         <div>
-          <h2 className="mb-1 text-sm font-medium">학습 레벨</h2>
-          <p className="mb-3 text-xs text-muted-foreground">학년에 따른 CEFR 수준에 맞춰 난이도가 조정돼요.</p>
+          <div className="mb-3 flex items-end justify-between gap-3">
+            <div>
+              <h2 className="mb-1 text-sm font-medium">학습 레벨</h2>
+              <p className="text-xs text-muted-foreground">학년에 따른 CEFR 수준에 맞춰 난이도가 조정돼요.</p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setQuizOpen(true)}
+              className="gap-1.5 whitespace-nowrap"
+            >
+              <ClipboardCheck className="h-3.5 w-3.5" />
+              배치 퀴즈
+            </Button>
+          </div>
+          {recommended && (
+            <div className="mb-3 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-foreground">
+              퀴즈 추천 레벨로 <span className="font-semibold">{LEVELS.find((l) => l.value === recommended)?.label}</span> ({LEVELS.find((l) => l.value === recommended)?.cefr})을 선택했어요.
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {LEVELS.map((l) => (
               <button
@@ -107,6 +129,16 @@ function NewPracticePage() {
           {loading ? "시작 중..." : "연습 시작하기"}
         </Button>
       </section>
+
+      <PlacementQuiz
+        open={quizOpen}
+        onOpenChange={setQuizOpen}
+        onApply={(lv) => {
+          setLevel(lv);
+          setRecommended(lv);
+          toast.success("추천 레벨이 적용됐어요");
+        }}
+      />
     </div>
   );
 }
