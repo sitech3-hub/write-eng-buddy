@@ -9,6 +9,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -284,16 +286,16 @@ const EXERCISE_LABEL: Record<string, string> = {
 };
 
 /**
- * Pull the student's own writing out of the chat — only messages that look
- * like real English attempts (not "도와줘" / "모르겠어" style help requests).
+ * Pull the student's own writing out of the chat.
+ * When `excludeHelp` is true, filter out "도와줘" / "모르겠어" style help requests.
  */
-function extractStudentWriting(messages: UIMessage[]): string[] {
+function extractStudentWriting(messages: UIMessage[], excludeHelp: boolean): string[] {
   const out: string[] = [];
   for (const m of messages) {
     if (m.role !== "user") continue;
     const text = getMessageText(m).trim();
     if (!text) continue;
-    if (!looksLikeEnglishAttempt(text)) continue;
+    if (excludeHelp && !looksLikeEnglishAttempt(text)) continue;
     out.push(text);
   }
   return out;
@@ -308,7 +310,11 @@ function ChatToolbar({
   threadId: string;
   exerciseType?: string;
 }) {
-  const entries = useMemo(() => extractStudentWriting(messages), [messages]);
+  const [excludeHelp, setExcludeHelp] = useState(true);
+  const entries = useMemo(
+    () => extractStudentWriting(messages, excludeHelp),
+    [messages, excludeHelp],
+  );
   const count = entries.length;
   const totalWordCount = useMemo(
     () => entries.reduce((sum, t) => sum + (t.match(/[A-Za-z]+/g)?.length ?? 0), 0),
@@ -433,9 +439,27 @@ function ChatToolbar({
           <DialogHeader>
             <DialogTitle>내 글 미리보기</DialogTitle>
             <DialogDescription>
-              저장할 문장을 선택하세요. 도움 요청 메시지는 자동으로 제외되어 있습니다.
+              저장할 문장을 선택하세요. 도움 요청 메시지 자동 제외를 켜고 끌 수 있어요.
             </DialogDescription>
           </DialogHeader>
+
+          <div className="flex items-center justify-between gap-3 rounded-md border bg-muted/30 px-3 py-2">
+            <div className="flex flex-col">
+              <Label htmlFor="exclude-help" className="text-sm cursor-pointer">
+                도움 요청 문장 자동 제외
+              </Label>
+              <span className="text-xs text-muted-foreground">
+                {excludeHelp
+                  ? "‘도와줘’, ‘모르겠어’ 같은 메시지를 숨깁니다."
+                  : "모든 학생 메시지를 포함합니다."}
+              </span>
+            </div>
+            <Switch
+              id="exclude-help"
+              checked={excludeHelp}
+              onCheckedChange={(v) => setExcludeHelp(Boolean(v))}
+            />
+          </div>
 
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>
