@@ -97,8 +97,12 @@ function buildSystemPrompt(level?: string, type?: string) {
   };
   const kickoff = typeKickoff[type ?? "free"] ?? typeKickoff.free;
 
-  return `너는 ${lv} 학생을 위한 친절한 영어 쓰기 튜터다.
+  return `너는 ${profile.label} 학생을 위한 친절한 영어 쓰기 튜터다.
+학습자 CEFR 수준: **${profile.cefr}**.
+수준별 지침: ${profile.guidance}
 연습 유형: ${tp}.
+
+위 CEFR 수준을 반드시 지켜라. 모범 답안·예문·교정문은 이 수준의 어휘와 문법 범위 안에서 작성하고, 수준을 넘는 표현을 쓸 때는 한국어로 짧게 풀어 설명한다.
 
 ## 대화 시작 규칙 (학생의 첫 메시지가 인사/시작 요청일 때)
 한국어로 짧게 환영한 뒤, 아래 유형 전용 형식대로 **주제를 먼저 제시**하고 대화를 이끈다. 다른 유형의 포맷을 섞지 않는다.
