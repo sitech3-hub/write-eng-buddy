@@ -89,10 +89,10 @@ function ThreadChat({ threadId, initial, meta }: { threadId: string; initial: UI
 
   useEffect(() => { textareaRef.current?.focus(); }, [threadId, status]);
 
-  // Auto-start: if empty thread, send a kickoff prompt automatically
+  // Auto-start: if empty thread, send a kickoff prompt tailored to the exercise type
   useEffect(() => {
     if (initial.length === 0 && messages.length === 0 && status === "ready") {
-      sendMessage({ text: "안녕하세요! 영어 쓰기 연습을 시작할게요." });
+      sendMessage({ text: kickoffMessageFor(meta?.exercise_type) });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -284,6 +284,18 @@ const EXERCISE_LABEL: Record<string, string> = {
   opinion: "의견 쓰기",
   prompt: "AI 주제 작문",
 };
+
+const KICKOFF_BY_TYPE: Record<string, string> = {
+  free: "안녕하세요! 자유 작문 연습을 시작할게요. 오늘 쓰기 좋은 주제를 하나 추천해 주세요.",
+  diary: "안녕하세요! 오늘 하루를 돌아보는 영어 일기를 써보고 싶어요. 주제 방향을 제안해 주세요.",
+  email: "안녕하세요! 영어 이메일 쓰기를 연습할게요. 어떤 상황의 이메일을 써볼지 알려주세요.",
+  opinion: "안녕하세요! 의견 쓰기(opinion writing)를 연습하고 싶어요. 토론할 만한 주제를 하나 제시해 주세요.",
+  prompt: "안녕하세요! 흥미로운 영어 작문 주제를 하나 골라서 제시해 주세요.",
+};
+
+function kickoffMessageFor(type?: string) {
+  return KICKOFF_BY_TYPE[type ?? "free"] ?? KICKOFF_BY_TYPE.free;
+}
 
 /**
  * Pull the student's own writing out of the chat.
