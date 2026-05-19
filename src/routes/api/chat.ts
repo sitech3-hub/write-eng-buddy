@@ -12,9 +12,43 @@ type ChatBody = {
   exerciseType?: string;
 };
 
-const LEVEL_LABEL: Record<string, string> = {
-  middle3: "한국 중학교 3학년",
-  high1: "한국 고등학교 1학년",
+const LEVEL_PROFILE: Record<string, { label: string; cefr: string; guidance: string }> = {
+  middle1: {
+    label: "한국 중학교 1학년",
+    cefr: "A1 (Beginner)",
+    guidance:
+      "기초 어휘(약 600~800단어), 현재형/be동사/일반동사 위주. 한 문장은 5~8단어 정도, 시제는 현재형 중심. 어려운 관용표현·접속사는 피하고, 같은 패턴을 반복해 익숙해지게 한다.",
+  },
+  middle2: {
+    label: "한국 중학교 2학년",
+    cefr: "A1–A2",
+    guidance:
+      "기초~초급 어휘(약 1,000단어). 현재/과거 시제, 간단한 조동사(can, will), 등위접속사(and, but, so) 사용. 문장 길이 6~10단어 권장.",
+  },
+  middle3: {
+    label: "한국 중학교 3학년",
+    cefr: "A2 (Elementary)",
+    guidance:
+      "초급 어휘(약 1,500단어). 현재/과거/미래 시제, 비교급, to부정사·동명사 기초. 2~3문장 단락 구성 연습. 복잡한 종속절은 1개까지만.",
+  },
+  high1: {
+    label: "한국 고등학교 1학년",
+    cefr: "A2–B1",
+    guidance:
+      "초·중급 어휘(약 2,000단어). 현재완료, 수동태, 관계대명사(who/which/that) 기초 도입. 3~5문장 단락. 의견을 짧게 표현하는 연결어(however, because, for example) 권장.",
+  },
+  high2: {
+    label: "한국 고등학교 2학년",
+    cefr: "B1 (Intermediate)",
+    guidance:
+      "중급 어휘(약 2,500~3,000단어). 다양한 시제, 관계사, 가정법 기초, 분사구문 입문. 단락 구성(주제문→근거→예시→마무리) 적극 안내.",
+  },
+  high3: {
+    label: "한국 고등학교 3학년",
+    cefr: "B1–B2",
+    guidance:
+      "중상급 어휘(약 3,500단어). 가정법, 도치, 분사구문, 추상명사 활용. 논리적 단락(서론-본론-결론) 및 학술적 톤(academic register) 연습. 수능·내신 서술형 수준의 정확성 강조.",
+  },
 };
 
 const TYPE_LABEL: Record<string, string> = {
