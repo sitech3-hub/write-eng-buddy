@@ -13,8 +13,12 @@ export const Route = createFileRoute("/_authenticated/chat/")({
 });
 
 const LEVELS = [
-  { value: "middle3", label: "중학교 3학년" },
-  { value: "high1", label: "고등학교 1학년" },
+  { value: "middle1", label: "중학교 1학년", cefr: "A1", desc: "기초 영어 (Beginner)" },
+  { value: "middle2", label: "중학교 2학년", cefr: "A1–A2", desc: "기초~초급" },
+  { value: "middle3", label: "중학교 3학년", cefr: "A2", desc: "초급 (Elementary)" },
+  { value: "high1", label: "고등학교 1학년", cefr: "A2–B1", desc: "초급~중급" },
+  { value: "high2", label: "고등학교 2학년", cefr: "B1", desc: "중급 (Intermediate)" },
+  { value: "high3", label: "고등학교 3학년", cefr: "B1–B2", desc: "중급~중상급" },
 ];
 const TYPES = [
   { value: "free", label: "자유 작문", desc: "원하는 주제로 자유롭게" },
