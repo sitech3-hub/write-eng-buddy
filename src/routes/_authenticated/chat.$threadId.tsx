@@ -89,10 +89,10 @@ function ThreadChat({ threadId, initial, meta }: { threadId: string; initial: UI
 
   useEffect(() => { textareaRef.current?.focus(); }, [threadId, status]);
 
-  // Auto-start: if empty thread, send a kickoff prompt automatically
+  // Auto-start: if empty thread, send a kickoff prompt tailored to the exercise type
   useEffect(() => {
     if (initial.length === 0 && messages.length === 0 && status === "ready") {
-      sendMessage({ text: "안녕하세요! 영어 쓰기 연습을 시작할게요." });
+      sendMessage({ text: kickoffMessageFor(meta?.exercise_type) });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
