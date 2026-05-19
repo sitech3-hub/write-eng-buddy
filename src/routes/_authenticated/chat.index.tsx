@@ -65,8 +65,27 @@ function NewPracticePage() {
 
       <section className="w-full space-y-6">
         <div>
-          <h2 className="mb-1 text-sm font-medium">학습 레벨</h2>
-          <p className="mb-3 text-xs text-muted-foreground">학년에 따른 CEFR 수준에 맞춰 난이도가 조정돼요.</p>
+          <div className="mb-3 flex items-end justify-between gap-3">
+            <div>
+              <h2 className="mb-1 text-sm font-medium">학습 레벨</h2>
+              <p className="text-xs text-muted-foreground">학년에 따른 CEFR 수준에 맞춰 난이도가 조정돼요.</p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setQuizOpen(true)}
+              className="gap-1.5 whitespace-nowrap"
+            >
+              <ClipboardCheck className="h-3.5 w-3.5" />
+              배치 퀴즈
+            </Button>
+          </div>
+          {recommended && (
+            <div className="mb-3 rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-foreground">
+              퀴즈 추천 레벨로 <span className="font-semibold">{LEVELS.find((l) => l.value === recommended)?.label}</span> ({LEVELS.find((l) => l.value === recommended)?.cefr})을 선택했어요.
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {LEVELS.map((l) => (
               <button
