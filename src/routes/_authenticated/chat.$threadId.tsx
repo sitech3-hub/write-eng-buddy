@@ -89,13 +89,15 @@ function ThreadChat({ threadId, initial, meta }: { threadId: string; initial: UI
 
   useEffect(() => { textareaRef.current?.focus(); }, [threadId, status]);
 
-  // Auto-start: if empty thread, send a kickoff prompt tailored to the exercise type
+  // Auto-start: if empty thread, send a kickoff prompt tailored to the exercise type + level
+  const kickoffSentRef = useRef(false);
   useEffect(() => {
-    if (initial.length === 0 && messages.length === 0 && status === "ready") {
-      sendMessage({ text: kickoffMessageFor(meta?.exercise_type) });
+    if (kickoffSentRef.current) return;
+    if (initial.length === 0 && messages.length === 0 && status === "ready" && meta) {
+      kickoffSentRef.current = true;
+      sendMessage({ text: kickoffMessageFor(meta.exercise_type, meta.level) });
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [initial.length, messages.length, status, meta, sendMessage]);
 
   const handleSend = async () => {
     const text = input.trim();
