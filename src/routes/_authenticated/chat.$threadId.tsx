@@ -336,15 +336,86 @@ const LEVEL_DISPLAY: Record<string, { name: string; cefr: string }> = {
   high3: { name: "고등학교 3학년", cefr: "B1–B2" },
 };
 
+const DIFFICULTY_TAG: Record<string, { label: string; color: string }> = {
+  middle1: { label: "쉬움", color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  middle2: { label: "쉬움", color: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+  middle3: { label: "기본", color: "bg-amber-50 text-amber-700 border-amber-200" },
+  high1: { label: "기본", color: "bg-amber-50 text-amber-700 border-amber-200" },
+  high2: { label: "도전", color: "bg-rose-50 text-rose-700 border-rose-200" },
+  high3: { label: "도전", color: "bg-rose-50 text-rose-700 border-rose-200" },
+};
+
+const LEVEL_GUIDE: Record<string, { grammar: string[]; vocab: string }> = {
+  middle1: {
+    grammar: ["be동사", "현재시제", "1~3인칭 대명사", "수/불가산 명사", "기본 전치사(in, on, at)"],
+    vocab: "숫자, 색깔, 가족, 음식, 동물 등 일상 기초 어휘",
+  },
+  middle2: {
+    grammar: ["과거시제", "미래 be going to", "there is/are", "기초 형용사/부사", "현재진행형"],
+    vocab: "취미, 학교, 날씨, 교통 등 일상 확장 어휘",
+  },
+  middle3: {
+    grammar: ["현재진행형", "can/could", "비교급/최상급", "have to / must", "조금 긴 문장 만들기"],
+    vocab: "쇼핑, 여행, 건강, 직업, 감정 표현 어휘",
+  },
+  high1: {
+    grammar: ["현재완료", "조건부 1형(if)", "접속사(because, although)", "수동태 기초", "will/shall 구분"],
+    vocab: "사회, 환경, 미디어, 학교생활, 의견 표현 어휘",
+  },
+  high2: {
+    grammar: ["관계대명사", "수동태", "조건부 1~2형", "간접의문문", "접속사 확장(while, unless)"],
+    vocab: "감정, 의견, 세계 문제, 기술, 추상 개념 어휘",
+  },
+  high3: {
+    grammar: ["조건부 2/3형", "가정법 과거", "관계대명사 고급", "간접화법", "강조/도치"],
+    vocab: "정치, 경제, 철학, 문화, 논증 및 비평 어휘",
+  },
+};
+
 function LevelInfoBar({ level }: { level?: string }) {
   const target = LEVEL_TARGET[level ?? ""] ?? LEVEL_TARGET.middle3;
   const label = LEVEL_DISPLAY[level ?? ""] ?? LEVEL_DISPLAY.middle3;
+  const tag = DIFFICULTY_TAG[level ?? ""] ?? DIFFICULTY_TAG.middle3;
+  const guide = LEVEL_GUIDE[level ?? ""] ?? LEVEL_GUIDE.middle3;
   return (
     <div className="border-b bg-muted/20">
       <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center gap-2 px-4 py-1.5 sm:px-6">
         <span className="rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
           {label.name} · {label.cefr}
         </span>
+        <HoverCard openDelay={100} closeDelay={200}>
+          <HoverCardTrigger asChild>
+            <button
+              type="button"
+              className={cn(
+                "inline-flex cursor-help items-center rounded-md border px-2 py-0.5 text-[10px] font-semibold transition-colors hover:opacity-80",
+                tag.color
+              )}
+            >
+              {tag.label}
+            </button>
+          </HoverCardTrigger>
+          <HoverCardContent side="bottom" align="start" className="w-72 space-y-2 text-xs">
+            <div>
+              <p className="mb-1 font-semibold text-foreground">권장 문법 범위</p>
+              <ul className="space-y-0.5 text-muted-foreground">
+                {guide.grammar.map((g) => (
+                  <li key={g} className="flex items-start gap-1.5">
+                    <span className="mt-0.5 block h-1 w-1 rounded-full bg-primary" />
+                    {g}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="border-t pt-2">
+              <p className="mb-0.5 font-semibold text-foreground">권장 어휘 범위</p>
+              <p className="text-muted-foreground">{guide.vocab}</p>
+            </div>
+            <div className="border-t pt-2 text-[10px] text-muted-foreground">
+              목표: {target.sentences}문장 / {target.paragraphs}단락 · 어휘 {target.vocab}단어
+            </div>
+          </HoverCardContent>
+        </HoverCard>
         <span className="text-[11px] text-muted-foreground">
           목표: {target.sentences}문장 / {target.paragraphs}단락 · 어휘 {target.vocab}단어
         </span>
