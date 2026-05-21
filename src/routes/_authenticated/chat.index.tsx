@@ -54,7 +54,7 @@ function NewPracticePage() {
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center justify-center px-6 py-12">
+    <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center overflow-y-auto px-6 py-12">
       <div className="mb-8 text-center">
         <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
           <Sparkles className="h-6 w-6" />
