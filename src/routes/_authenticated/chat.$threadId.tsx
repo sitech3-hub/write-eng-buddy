@@ -131,7 +131,7 @@ function ThreadChat({ threadId, initial, meta }: { threadId: string; initial: UI
 
       <div className="border-t bg-background">
         <div className="mx-auto w-full max-w-3xl px-4 py-4 sm:px-6">
-          <div className="relative rounded-2xl border bg-card shadow-sm focus-within:border-primary/50">
+          <div className="relative rounded-xl border bg-card transition focus-within:border-foreground/40 focus-within:shadow-sm">
             <Textarea
               ref={textareaRef}
               value={input}
@@ -150,12 +150,12 @@ function ThreadChat({ threadId, initial, meta }: { threadId: string; initial: UI
               onClick={handleSend}
               disabled={isLoading || !input.trim()}
               size="icon"
-              className="absolute bottom-2 right-2 h-9 w-9"
+              className="absolute bottom-2 right-2 h-8 w-8 rounded-lg"
             >
-              <Send className="h-4 w-4" />
+              <Send className="h-3.5 w-3.5" />
             </Button>
           </div>
-          <p className="mt-2 text-center text-xs text-muted-foreground">
+          <p className="mt-2 text-center text-[11px] text-muted-foreground">
             영어로 작성하면 AI가 교정하고 모범 답안을 알려줘요.
           </p>
         </div>
@@ -171,7 +171,9 @@ function MessageRow({ message }: { message: UIMessage }) {
     <div className={cn("mb-6 flex", isUser ? "justify-end" : "justify-start")}>
       <div className={cn(
         "max-w-[85%]",
-        isUser ? "rounded-2xl bg-primary px-4 py-2.5 text-primary-foreground whitespace-pre-wrap" : "md-content"
+        isUser
+          ? "rounded-2xl rounded-br-md bg-foreground px-4 py-2.5 text-background whitespace-pre-wrap"
+          : "md-content"
       )}>
         {isUser ? text : <ReactMarkdown>{text}</ReactMarkdown>}
       </div>
