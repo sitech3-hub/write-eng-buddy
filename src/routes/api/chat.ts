@@ -71,6 +71,7 @@ const TYPE_LABEL: Record<string, string> = {
 function buildSystemPrompt(level?: string, type?: string) {
   const profile = LEVEL_PROFILE[level ?? "middle3"] ?? LEVEL_PROFILE.middle3;
   const tp = TYPE_LABEL[type ?? "free"] ?? TYPE_LABEL.free;
+  const difficulty = DIFFICULTY_TAG[level ?? "middle3"] ?? DIFFICULTY_TAG.middle3;
 
   const typeKickoff: Record<string, string> = {
     free: `학생이 좋아할 만한 자유 작문 주제 1개를 제안한다.
