@@ -51,6 +51,15 @@ const LEVEL_PROFILE: Record<string, { label: string; cefr: string; guidance: str
   },
 };
 
+const DIFFICULTY_TAG: Record<string, string> = {
+  middle1: "쉬움",
+  middle2: "쉬움",
+  middle3: "기본",
+  high1: "기본",
+  high2: "도전",
+  high3: "도전",
+};
+
 const TYPE_LABEL: Record<string, string> = {
   free: "자유 작문",
   diary: "영어 일기",
@@ -62,35 +71,36 @@ const TYPE_LABEL: Record<string, string> = {
 function buildSystemPrompt(level?: string, type?: string) {
   const profile = LEVEL_PROFILE[level ?? "middle3"] ?? LEVEL_PROFILE.middle3;
   const tp = TYPE_LABEL[type ?? "free"] ?? TYPE_LABEL.free;
+  const difficulty = DIFFICULTY_TAG[level ?? "middle3"] ?? DIFFICULTY_TAG.middle3;
 
   const typeKickoff: Record<string, string> = {
     free: `학생이 좋아할 만한 자유 작문 주제 1개를 제안한다.
 형식:
-- **📝 오늘의 주제** (한국어 주제 + 영어 키워드 3~5개)
+- **📝 오늘의 주제 [${difficulty}]** (한국어 주제 + 영어 키워드 3~5개)
 - **💭 생각해 볼 점** (한국어 질문 2~3개)
 - **✍️ 이렇게 시작해 보세요** (영어 시작 문장 1개 + 한국어 번역)
 - 마지막에 "어려우면 '도와줘'라고 말해도 좋아요" 한 줄.`,
     diary: `오늘 하루를 돌아보는 영어 일기를 안내한다.
 형식:
-- **📔 오늘의 일기 주제** (예: '오늘 가장 기억에 남는 순간', '오늘 기분과 그 이유' 중 1개 + 영어 키워드)
+- **📔 오늘의 일기 주제 [${difficulty}]** (예: '오늘 가장 기억에 남는 순간', '오늘 기분과 그 이유' 중 1개 + 영어 키워드)
 - **🕒 일기 구성** (When / Where / What happened / How I felt 4가지를 한국어로 안내)
 - **✍️ 이렇게 시작해 보세요** ("Today, I ..." 같은 영어 첫 문장 1개 + 번역)
 - "3~5문장으로 자유롭게 써보세요. 막히면 '도와줘'." 한 줄.`,
     email: `구체적인 영어 이메일 상황을 1개 제시한다 (예: 외국인 친구에게 한국 방문 초대, 선생님께 결석 알림).
 형식:
-- **📧 상황 설정** (받는 사람 To / 보내는 목적 / 분위기를 한국어로)
+- **📧 상황 설정 [${difficulty}]** (받는 사람 To / 보내는 목적 / 분위기를 한국어로)
 - **🧩 포함할 내용** (한국어 불릿 2~3개)
 - **✍️ 인사말 예시** (영어 인사 1줄 + 번역, 예: "Dear Mr. Kim,")
 - "본문을 3~4문장으로 써보세요. 막히면 '도와줘'." 한 줄.`,
     opinion: `학생 수준 의견 쓰기 주제 1개를 제시한다 (예: '교복이 필요할까?', '스마트폰 사용 시간 제한').
 형식:
-- **⚖️ 오늘의 논제** (한국어 + 영어 한 줄 요약)
+- **⚖️ 오늘의 논제 [${difficulty}]** (한국어 + 영어 한 줄 요약)
 - **🧱 OREO 구조** (Opinion → Reason → Example → Opinion을 한국어로 짧게 설명)
 - **✍️ 의견 문장 시작 예시** ("I think ..." / "In my opinion ..." 중 1개 + 번역)
 - "찬성/반대 입장을 정하고 한 문장부터 써보세요. 막히면 '도와줘'." 한 줄.`,
     prompt: `학생 관심사를 고려한 흥미로운 영어 작문 주제 1개를 깜짝 제시한다.
 형식:
-- **🎲 오늘의 깜짝 주제** (한국어 + 영어 한 줄, 왜 이 주제를 골랐는지 한 줄)
+- **🎲 오늘의 깜짝 주제 [${difficulty}]** (한국어 + 영어 한 줄, 왜 이 주제를 골랐는지 한 줄)
 - **🔑 핵심 영어 표현** (영어 단어/구문 4~6개 + 한국어 뜻)
 - **✍️ 이렇게 시작해 보세요** (영어 첫 문장 1개 + 번역)
 - "재미있게 써보세요! 막히면 '도와줘'." 한 줄.`,
@@ -103,6 +113,9 @@ function buildSystemPrompt(level?: string, type?: string) {
 연습 유형: ${tp}.
 
 위 CEFR 수준을 반드시 지켜라. 주제 선정·과제 난이도·요구 글 길이·모범 답안·예문·교정문 모두 이 수준의 어휘와 문법 범위 안에서 작성한다. A1~A2 수준에서는 친숙하고 구체적인 일상 주제와 2~4문장 분량을, B1에서는 의견·경험 중심 주제와 4~6문장을, B2에서는 추상적·논증적 주제와 6~8문장 단락을 기본으로 한다. 수준을 넘는 표현을 쓸 때는 한국어로 짧게 풀어 설명한다.
+
+## 난이도 태그 규칙
+주제를 제시할 때는 제목 옆에 **[난이도: ${difficulty}]** 태그를 반드시 붙인다.
 
 ## 대화 시작 규칙 (학생의 첫 메시지가 인사/시작 요청일 때)
 한국어로 짧게 환영한 뒤, 아래 유형 전용 형식대로 **주제를 먼저 제시**하고 대화를 이끈다. 다른 유형의 포맷을 섞지 않는다.
