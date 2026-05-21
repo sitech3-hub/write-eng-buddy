@@ -1,12 +1,13 @@
 import { createFileRoute, Outlet, Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { LogOut, Plus, MessageSquare, Trash2, Menu } from "lucide-react";
+import { LogOut, Plus, MessageSquare, Trash2, Menu, GraduationCap } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { supabase } from "@/integrations/supabase/client";
+import { isTeacherEmail } from "@/lib/teacher-config";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/chat")({
@@ -58,6 +59,8 @@ function ChatLayout() {
     navigate({ to: "/login" });
   };
 
+  const isTeacher = isTeacherEmail(email);
+
   const sidebarBody = (
     <>
       <div className="px-6 pt-6 pb-4">
@@ -67,10 +70,19 @@ function ChatLayout() {
         </Link>
         <p className="mt-1 pl-9 text-xs text-sidebar-foreground/50">영어 쓰기 연습</p>
       </div>
-      <div className="px-4">
+      <div className="space-y-2 px-4">
         <Button onClick={handleNew} variant="outline" className="w-full justify-start gap-2 rounded-lg border-dashed font-normal" size="sm">
           <Plus className="h-3.5 w-3.5" /> 새 연습 시작
         </Button>
+        {isTeacher && (
+          <Link
+            to="/teacher"
+            onClick={() => setMobileOpen(false)}
+            className="flex w-full items-center gap-2 rounded-lg border bg-card px-3 py-1.5 text-sm font-normal text-sidebar-foreground/80 transition hover:border-foreground/40 hover:text-sidebar-foreground"
+          >
+            <GraduationCap className="h-3.5 w-3.5" /> 교사 대시보드
+          </Link>
+        )}
       </div>
       <div className="mt-6 px-6 pb-2 text-[10px] font-medium uppercase tracking-wider text-sidebar-foreground/40">
         최근 연습
