@@ -311,6 +311,42 @@ function kickoffMessageFor(type?: string, level?: string) {
   return `${base}\n\n제 수준은 **${lv}**이에요. 주제 난이도, 어휘, 예문, 글의 길이까지 모두 이 수준에 맞춰 주세요.`;
 }
 
+/* ── CEFR level info bar ── */
+const LEVEL_TARGET: Record<string, { sentences: string; paragraphs: string; vocab: string }> = {
+  middle1: { sentences: "2~3", paragraphs: "1", vocab: "600~800" },
+  middle2: { sentences: "3~4", paragraphs: "1", vocab: "1,000" },
+  middle3: { sentences: "4~5", paragraphs: "1~2", vocab: "1,500" },
+  high1: { sentences: "5~6", paragraphs: "2", vocab: "2,000" },
+  high2: { sentences: "6~7", paragraphs: "2~3", vocab: "2,500~3,000" },
+  high3: { sentences: "7~8", paragraphs: "3", vocab: "3,500" },
+};
+
+const LEVEL_DISPLAY: Record<string, { name: string; cefr: string }> = {
+  middle1: { name: "중학교 1학년", cefr: "A1" },
+  middle2: { name: "중학교 2학년", cefr: "A1–A2" },
+  middle3: { name: "중학교 3학년", cefr: "A2" },
+  high1: { name: "고등학교 1학년", cefr: "A2–B1" },
+  high2: { name: "고등학교 2학년", cefr: "B1" },
+  high3: { name: "고등학교 3학년", cefr: "B1–B2" },
+};
+
+function LevelInfoBar({ level }: { level?: string }) {
+  const target = LEVEL_TARGET[level ?? ""] ?? LEVEL_TARGET.middle3;
+  const label = LEVEL_DISPLAY[level ?? ""] ?? LEVEL_DISPLAY.middle3;
+  return (
+    <div className="border-b bg-muted/20">
+      <div className="mx-auto flex w-full max-w-3xl flex-wrap items-center gap-2 px-4 py-1.5 sm:px-6">
+        <span className="rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+          {label.name} · {label.cefr}
+        </span>
+        <span className="text-[11px] text-muted-foreground">
+          목표: {target.sentences}문장 / {target.paragraphs}단락 · 어휘 {target.vocab}단어
+        </span>
+      </div>
+    </div>
+  );
+}
+
 
 /**
  * Pull the student's own writing out of the chat.
