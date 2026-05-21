@@ -51,6 +51,15 @@ const LEVEL_PROFILE: Record<string, { label: string; cefr: string; guidance: str
   },
 };
 
+const DIFFICULTY_TAG: Record<string, string> = {
+  middle1: "쉬움",
+  middle2: "쉬움",
+  middle3: "기본",
+  high1: "기본",
+  high2: "도전",
+  high3: "도전",
+};
+
 const TYPE_LABEL: Record<string, string> = {
   free: "자유 작문",
   diary: "영어 일기",
