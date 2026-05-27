@@ -4,6 +4,7 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import ReactMarkdown from "react-markdown";
 import { Send, Download, FileText, Printer } from "lucide-react";
+import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -80,7 +81,17 @@ function ThreadChat({ threadId, initial, meta }: { threadId: string; initial: UI
     id: threadId,
     messages: initial,
     transport,
-    onError: (e) => console.error(e),
+    onError: (e) => {
+      console.error(e);
+      const msg = e?.message ?? "";
+      if (msg.includes("크레딧")) {
+        toast.error("AI 크레딧 소진", { description: msg });
+      } else if (msg.includes("너무 많")) {
+        toast.warning("요청이 너무 많습니다", { description: msg });
+      } else if (msg) {
+        toast.error("오류", { description: msg });
+      }
+    },
   });
 
   const [input, setInput] = useState("");
