@@ -81,7 +81,17 @@ function ThreadChat({ threadId, initial, meta }: { threadId: string; initial: UI
     id: threadId,
     messages: initial,
     transport,
-    onError: (e) => console.error(e),
+    onError: (e) => {
+      console.error(e);
+      const msg = e?.message ?? "";
+      if (msg.includes("크레딧")) {
+        toast.error("AI 크레딧 소진", { description: msg });
+      } else if (msg.includes("너무 많")) {
+        toast.warning("요청이 너무 많습니다", { description: msg });
+      } else if (msg) {
+        toast.error("오류", { description: msg });
+      }
+    },
   });
 
   const [input, setInput] = useState("");
