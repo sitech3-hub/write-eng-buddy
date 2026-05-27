@@ -289,10 +289,18 @@ export const getStudentDetail = createServerFn({ method: "GET" })
 
 // ---------- Read-only thread viewer ----------
 
+export type JsonValue =
+  | string
+  | number
+  | boolean
+  | null
+  | JsonValue[]
+  | { [key: string]: JsonValue };
+
 export type ThreadMessage = {
   id: string;
   role: string;
-  parts: unknown;
+  parts: JsonValue;
   created_at: string;
 };
 
