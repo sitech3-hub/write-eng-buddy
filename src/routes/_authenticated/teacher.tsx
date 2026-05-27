@@ -1,8 +1,22 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Users } from "lucide-react";
+import {
+  Area,
+  AreaChart,
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+import { ArrowLeft, ChevronRight, Users } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { getTeacherOverview, type StudentRow } from "@/lib/teacher.functions";
@@ -20,13 +34,55 @@ export const Route = createFileRoute("/_authenticated/teacher")({
   component: TeacherDashboard,
 });
 
+const TYPE_LABEL: Record<string, string> = {
+  free: "자유작문",
+  diary: "일기",
+  email: "이메일",
+  opinion: "의견",
+  topic: "주제제시",
+};
+const LEVEL_LABEL: Record<string, string> = {
+  middle1: "중1",
+  middle2: "중2",
+  middle3: "중3",
+  high1: "고1",
+  high2: "고2",
+  high3: "고3",
+};
+
 function formatDate(s: string | null): string {
   if (!s) return "—";
   const d = new Date(s);
   return d.toLocaleString("ko-KR", {
-    year: "numeric", month: "2-digit", day: "2-digit",
-    hour: "2-digit", minute: "2-digit",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
   });
+}
+
+function shortDate(s: string): string {
+  const d = new Date(s);
+  return `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
+function useCountUp(value: number, duration = 700): number {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    let raf = 0;
+    const start = performance.now();
+    const from = 0;
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setN(Math.round(from + (value - from) * eased));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [value, duration]);
+  return n;
 }
 
 function TeacherDashboard() {
@@ -34,7 +90,6 @@ function TeacherDashboard() {
   const fetchOverview = useServerFn(getTeacherOverview);
   const [ready, setReady] = useState(false);
 
-  // Ensure session restored before calling the protected server fn
   useEffect(() => {
     supabase.auth.getSession().then(() => setReady(true));
   }, []);
@@ -47,8 +102,37 @@ function TeacherDashboard() {
 
   const students: StudentRow[] = data?.students ?? [];
   const totalStudents = students.length;
+  const activeStudents = students.filter((s) => s.message_count > 0).length;
   const totalThreads = students.reduce((acc, s) => acc + s.thread_count, 0);
   const totalMessages = students.reduce((acc, s) => acc + s.message_count, 0);
+
+  const dailyData = useMemo(
+    () =>
+      (data?.dailyActivity ?? []).map((d) => ({
+        date: d.date,
+        label: shortDate(d.date),
+        count: d.count,
+      })),
+    [data?.dailyActivity],
+  );
+
+  const typeData = useMemo(
+    () =>
+      (data?.exerciseTypeDist ?? []).map((d) => ({
+        name: TYPE_LABEL[d.key] ?? d.key,
+        value: d.count,
+      })),
+    [data?.exerciseTypeDist],
+  );
+
+  const levelData = useMemo(
+    () =>
+      (data?.levelDist ?? []).map((d) => ({
+        name: LEVEL_LABEL[d.key] ?? d.key,
+        value: d.count,
+      })),
+    [data?.levelDist],
+  );
 
   return (
     <div className="mx-auto w-full max-w-6xl flex-1 overflow-y-auto px-6 py-10">
@@ -61,20 +145,124 @@ function TeacherDashboard() {
             <ArrowLeft className="h-3 w-3" /> 채팅으로 돌아가기
           </button>
           <h1 className="text-2xl font-semibold tracking-tight">교사 대시보드</h1>
-          <p className="mt-1 text-sm text-muted-foreground">학생들의 학습 현황을 한눈에 확인하세요.</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            학생들의 학습 누적 기록과 활동 추이를 한눈에 확인하세요.
+          </p>
         </div>
       </div>
 
-      <div className="mb-8 grid gap-3 sm:grid-cols-3">
+      <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="등록 학생" value={totalStudents} />
+        <StatCard label="활동 학생" value={activeStudents} hint={`전체 ${totalStudents}명 중`} />
         <StatCard label="총 연습 수" value={totalThreads} />
         <StatCard label="총 메시지 수" value={totalMessages} />
       </div>
 
+      {/* Charts */}
+      <div className="mb-6 grid gap-4 lg:grid-cols-3">
+        <ChartCard title="최근 30일 메시지 추이" className="lg:col-span-2">
+          <div className="h-56 w-full">
+            <ResponsiveContainer>
+              <AreaChart data={dailyData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="g-activity" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.35} />
+                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" width={28} />
+                <Tooltip
+                  contentStyle={{
+                    background: "hsl(var(--popover))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: 8,
+                    fontSize: 12,
+                  }}
+                  labelStyle={{ color: "hsl(var(--foreground))" }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="count"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={2}
+                  fill="url(#g-activity)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </ChartCard>
+
+        <ChartCard title="연습 유형 분포">
+          <div className="h-56 w-full">
+            {typeData.length === 0 ? (
+              <EmptyChart />
+            ) : (
+              <ResponsiveContainer>
+                <PieChart>
+                  <Pie
+                    data={typeData}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={42}
+                    outerRadius={70}
+                    paddingAngle={2}
+                    stroke="hsl(var(--background))"
+                  >
+                    {typeData.map((_, i) => (
+                      <Cell key={i} fill={`hsl(var(--primary) / ${1 - i * 0.15})`} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      background: "hsl(var(--popover))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+          <Legend items={typeData} />
+        </ChartCard>
+      </div>
+
+      <div className="mb-6">
+        <ChartCard title="레벨별 연습 수">
+          <div className="h-44 w-full">
+            {levelData.length === 0 ? (
+              <EmptyChart />
+            ) : (
+              <ResponsiveContainer>
+                <BarChart data={levelData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" width={28} />
+                  <Tooltip
+                    cursor={{ fill: "hsl(var(--muted) / 0.4)" }}
+                    contentStyle={{
+                      background: "hsl(var(--popover))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: 8,
+                      fontSize: 12,
+                    }}
+                  />
+                  <Bar dataKey="value" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+        </ChartCard>
+      </div>
+
+      {/* Students */}
       <div className="rounded-xl border bg-card">
         <div className="flex items-center justify-between border-b px-5 py-3">
           <div className="flex items-center gap-2 text-sm font-semibold">
-            <Users className="h-4 w-4" /> 학생 목록
+            <Users className="h-4 w-4" /> 학생별 누적 기록
           </div>
           <span className="text-xs text-muted-foreground">{totalStudents}명</span>
         </div>
@@ -95,43 +283,126 @@ function TeacherDashboard() {
         )}
 
         {!isLoading && students.length > 0 && (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b text-left text-[11px] uppercase tracking-wider text-muted-foreground">
-                  <th className="px-5 py-2 font-medium">이름</th>
-                  <th className="px-5 py-2 font-medium">이메일</th>
-                  <th className="px-5 py-2 font-medium text-right">연습</th>
-                  <th className="px-5 py-2 font-medium text-right">메시지</th>
-                  <th className="px-5 py-2 font-medium">가입일</th>
-                  <th className="px-5 py-2 font-medium">최근 활동</th>
-                </tr>
-              </thead>
-              <tbody>
-                {students.map((s) => (
-                  <tr key={s.user_id} className="border-b last:border-b-0 hover:bg-muted/30">
-                    <td className="px-5 py-3">{s.display_name ?? "—"}</td>
-                    <td className="px-5 py-3 text-muted-foreground">{s.email ?? "—"}</td>
-                    <td className="px-5 py-3 text-right tabular-nums">{s.thread_count}</td>
-                    <td className="px-5 py-3 text-right tabular-nums">{s.message_count}</td>
-                    <td className="px-5 py-3 text-muted-foreground">{formatDate(s.created_at)}</td>
-                    <td className="px-5 py-3 text-muted-foreground">{formatDate(s.last_active_at ?? s.last_sign_in_at)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <ul className="divide-y">
+            {students.map((s, idx) => (
+              <li
+                key={s.user_id}
+                className="group cursor-pointer px-5 py-3 transition-colors hover:bg-muted/40 animate-in fade-in slide-in-from-bottom-1"
+                style={{ animationDelay: `${Math.min(idx * 25, 400)}ms` }}
+                onClick={() =>
+                  navigate({ to: "/teacher/student/$userId", params: { userId: s.user_id } })
+                }
+              >
+                <div className="flex items-center gap-4">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                    {(s.display_name ?? s.email ?? "?").trim().charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-baseline gap-x-2">
+                      <span className="truncate text-sm font-medium">
+                        {s.display_name ?? "—"}
+                      </span>
+                      <span className="truncate text-xs text-muted-foreground">{s.email ?? "—"}</span>
+                    </div>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
+                      <span>
+                        연습 <span className="tabular-nums text-foreground">{s.thread_count}</span>
+                      </span>
+                      <span>
+                        메시지 <span className="tabular-nums text-foreground">{s.message_count}</span>
+                      </span>
+                      <span>최근 {formatDate(s.last_active_at ?? s.last_sign_in_at)}</span>
+                    </div>
+                  </div>
+                  <Sparkline values={s.daily_sparkline} />
+                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+                </div>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
     </div>
   );
 }
 
-function StatCard({ label, value }: { label: string; value: number }) {
+function StatCard({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: number;
+  hint?: string;
+}) {
+  const n = useCountUp(value);
   return (
-    <div className="rounded-xl border bg-card p-4">
+    <div className="rounded-xl border bg-card p-4 transition-colors hover:bg-muted/30">
       <div className="text-xs text-muted-foreground">{label}</div>
-      <div className="mt-1 text-2xl font-semibold tabular-nums">{value}</div>
+      <div className="mt-1 text-2xl font-semibold tabular-nums">{n}</div>
+      {hint && <div className="mt-0.5 text-[11px] text-muted-foreground">{hint}</div>}
+    </div>
+  );
+}
+
+function ChartCard({
+  title,
+  children,
+  className = "",
+}: {
+  title: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      className={`rounded-xl border bg-card p-4 animate-in fade-in slide-in-from-bottom-2 ${className}`}
+    >
+      <div className="mb-3 text-sm font-semibold">{title}</div>
+      {children}
+    </div>
+  );
+}
+
+function EmptyChart() {
+  return (
+    <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
+      아직 데이터가 없어요.
+    </div>
+  );
+}
+
+function Legend({ items }: { items: { name: string; value: number }[] }) {
+  if (items.length === 0) return null;
+  return (
+    <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+      {items.map((it, i) => (
+        <span key={it.name} className="inline-flex items-center gap-1">
+          <span
+            className="inline-block h-2 w-2 rounded-sm"
+            style={{ background: `hsl(var(--primary) / ${1 - i * 0.15})` }}
+          />
+          {it.name} <span className="tabular-nums text-foreground">{it.value}</span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function Sparkline({ values }: { values: number[] }) {
+  const max = Math.max(1, ...values);
+  return (
+    <div className="hidden h-8 items-end gap-[2px] sm:flex">
+      {values.map((v, i) => (
+        <span
+          key={i}
+          className="w-[3px] rounded-sm bg-primary/70"
+          style={{
+            height: `${Math.max(2, (v / max) * 32)}px`,
+            opacity: v === 0 ? 0.18 : 0.55 + (v / max) * 0.45,
+          }}
+        />
+      ))}
     </div>
   );
 }
