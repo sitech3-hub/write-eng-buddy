@@ -362,6 +362,11 @@ export const getStudentThread = createServerFn({ method: "GET" })
           (u?.user_metadata?.name as string | undefined) ??
           null,
       },
-      messages: (messages ?? []) as ThreadMessage[],
+      messages: (messages ?? []).map((m) => ({
+        id: m.id,
+        role: m.role,
+        parts: m.parts as JsonValue,
+        created_at: m.created_at,
+      })),
     };
   });
