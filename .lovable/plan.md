@@ -1,57 +1,86 @@
 
-# AI 모델 자동 폴백 로직 추가
+# 교사 대시보드 확장 — 학생 누적기록 + 시각화
 
-`/api/chat` 서버 라우트에서 Lovable AI Gateway 호출 시 크레딧 소진(402) 또는 레이트 리밋(429)이 감지되면 자동으로 더 저렴/가벼운 모델로 재시도하는 로직을 추가합니다.
+현재 대시보드는 학생 목록 + 카운트 3종(StatCard)만 있습니다. 교사가 실제로 학습 지도에 활용할 수 있도록 **누적 학습 기록**과 **차트 시각화**를 추가합니다.
 
-## 동작 방식
+## 추가할 섹션 (우선순위 순)
 
-1. **기본 모델**: `google/gemini-3-flash-preview` (현재와 동일)
-2. **1차 폴백**: `google/gemini-2.5-flash` (균형형, 저렴)
-3. **2차 폴백**: `google/gemini-2.5-flash-lite` (최저가, 빠름)
+### 1. 전체 활동 추이 차트 (대시보드 상단)
+- **일자별 메시지 수 라인/에어리어 차트** (최근 30일)
+  - x축: 날짜, y축: 메시지 수
+  - 학생 활동이 활발한 시기 한눈에 파악
+- **연습 유형별 분포 도넛 차트** (자유작문/일기/이메일/의견/주제제시)
+  - 어떤 유형을 많이 연습하는지
 
-스트리밍 시작 전에 모델을 한 번 ping(짧은 헬스 체크) 하기보다는, 실제 `streamText` 호출 시 발생하는 에러를 catch 해서 다음 모델로 넘어가는 방식이 가장 자연스럽습니다. AI SDK는 `streamText`가 비동기로 stream을 반환하므로, 첫 청크 직전 에러를 잡기 위해 `onError` 콜백 + try/catch 조합을 씁니다.
+### 2. 레벨 분포 막대 차트
+- 중1~고3 6단계별 학생 수(또는 스레드 수)
+- 학년별 활동 편차 확인
 
-## 변경 파일
+### 3. 학생 카드 그리드 (기존 테이블 대체 또는 보완)
+- 학생별 카드에:
+  - 이름/이메일
+  - 누적 연습/메시지 수
+  - **미니 스파크라인** (최근 14일 활동) — 시각적으로 활성/비활성 학생 즉시 구분
+  - 마지막 활동 시각
+  - 상세 보기 버튼 → `/teacher/student/$userId` 페이지로 이동
 
-### 1. `src/lib/ai-gateway.ts`
-- 모델 폴백 체인 상수 추가: `MODEL_FALLBACK_CHAIN = ["google/gemini-3-flash-preview", "google/gemini-2.5-flash", "google/gemini-2.5-flash-lite"]`
-- 헬퍼 함수 `isCreditOrRateLimitError(err)` 추가: 에러 메시지/상태코드에서 402, 429, "payment required", "rate limit", "quota" 패턴을 감지
+### 4. 학생 상세 페이지 (`/teacher/student/$userId`) ⭐ 핵심
+교사가 한 학생을 깊이 들여다볼 수 있는 페이지:
+- **누적 통계**: 총 연습 수, 총 메시지 수, 평균 메시지/스레드, 활동 일수, 가장 많이 한 연습 유형, 주로 사용한 레벨
+- **활동 히트맵** (GitHub-style 잔디): 최근 12주 일자별 활동량
+- **일자별 활동 차트**: 라인/바 차트 (최근 30일)
+- **연습 유형 분포**: 도넛
+- **스레드 목록**: 제목, 레벨, 유형, 메시지 수, 마지막 활동일 → 클릭 시 읽기 전용으로 대화 내용 보기
+- **(선택) 자주 등장한 영어 키워드 클라우드** — 학생 메시지에서 추출
 
-### 2. `src/routes/api/chat.ts`
-- 기존 단일 `streamText({ model, ... })` 호출을 폴백 루프로 감싼다:
-  ```
-  for (const modelId of MODEL_FALLBACK_CHAIN) {
-    try {
-      const result = streamText({
-        model: gateway(modelId),
-        system,
-        messages,
-        onError: ({ error }) => { /* log + 다음 시도 신호 */ },
-      });
-      // 첫 응답이 안전하게 시작되면 그대로 반환
-      return result.toUIMessageStreamResponse({ ... });
-    } catch (err) {
-      if (isCreditOrRateLimitError(err) && hasNextModel) continue;
-      throw err;
-    }
-  }
-  ```
-- 폴백이 발생한 경우, 어시스턴트 메시지 저장 시 사용된 모델 ID를 콘솔에 로그 (디버깅용). 메시지 parts에는 영향을 주지 않음.
-- 모든 모델 소진 시 사용자에게 명확한 한국어 에러 응답:
-  - 402 → "AI 사용 크레딧이 모두 소진되었습니다. 워크스페이스 설정에서 크레딧을 추가해 주세요."
-  - 429 → "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요."
+### 5. (선택, 추후) 최근 교정 사례
+- 어시스턴트 메시지 중 `✏️ 교정` 섹션을 파싱해 "최근 교정 5건" 표시
+- 학생이 자주 틀리는 패턴 인사이트
 
-### 3. 클라이언트 토스트 (선택)
-`src/routes/_authenticated/chat.$threadId.tsx`의 `useChat` `onError`에서 위 에러 메시지가 오면 토스트로 표시 (이미 onError가 있다면 해당 분기 보강, 없으면 추가).
+## 기술 구현 계획
 
-## 주의사항
+### 라이브러리
+- **Recharts** (이미 shadcn/ui chart 컴포넌트로 일부 포함되어 있을 가능성. 확인 후 없으면 `bun add recharts`)
+- 히트맵: 별도 라이브러리 없이 grid + opacity로 직접 구현 (가벼움)
+- 카운트업 애니메이션, fade-in 등 시각 효과는 Tailwind transition + 간단한 CSS 키프레임으로
 
-- 스트리밍 중간에 모델을 바꿀 수는 없음 — 폴백은 **스트림이 시작되기 전** 또는 **즉시 실패**한 경우에만 동작.
-- 폴백 발생 시 시스템 프롬프트/메시지는 동일하게 재사용 (CEFR/난이도 유지).
-- 모델 자체 능력 차이로 응답 품질이 다소 떨어질 수 있다는 점은 사용자에게 별도 안내하지 않음 (UX 매끄럽게).
+### 서버 함수 추가/확장 (`src/lib/teacher.functions.ts`)
+- `getTeacherOverview()` 확장 — 반환에 추가:
+  - `dailyActivity: { date: string; count: number }[]` (최근 30일)
+  - `exerciseTypeDist: { type: string; count: number }[]`
+  - `levelDist: { level: string; count: number }[]`
+  - 각 학생 row에 `daily_sparkline: number[]` (최근 14일)
+- `getStudentDetail(userId)` 신규
+  - 인증 + 교사 이메일 화이트리스트 재확인
+  - 해당 학생의 스레드 목록, 일자별 활동, 유형/레벨 분포, 히트맵 데이터 반환
+- `getStudentThread(userId, threadId)` 신규 — 교사가 대화 읽기 전용 조회
 
-## 검증
+### 라우트
+- `src/routes/_authenticated/teacher.tsx` — 차트/스파크라인 추가
+- `src/routes/_authenticated/teacher.student.$userId.tsx` — 학생 상세 페이지 신규
+- 둘 다 `beforeLoad`에서 `isTeacherEmail` 가드
 
-- 빌드 통과 확인
-- `/api/chat` 정상 동작 확인 (기본 모델 호출되는지)
-- 모델 ID를 일부러 잘못 넣어 폴백이 동작하는지 로그 확인 (개발 중 임시)
+### 시각 효과
+- 카드/차트 등장 시 fade-in + slide-up (Tailwind `animate-in fade-in slide-in-from-bottom-2`)
+- 숫자 카운트업 (간단한 `useEffect` + `requestAnimationFrame`)
+- 히트맵 셀 hover 시 tooltip
+- 차트는 부드러운 곡선 + 그라데이션 area
+- 미니멀 디자인 원칙 유지: 모노톤 + 포인트 컬러 1개 (primary)
+
+## 데이터/성능 고려
+- `messages` 테이블의 `created_at`만으로 일자별 집계 가능 — admin 클라이언트로 group by
+- 학생 수가 많아질 경우 30일 윈도우로 제한, 학생 카드는 페이지네이션 또는 검색 추가 (이번 범위 외)
+
+## 작업 순서 (구현 시)
+1. `teacher.functions.ts` 확장 + 신규 서버 함수 작성
+2. recharts 설치 확인/추가
+3. `teacher.tsx`에 차트 섹션 + 스파크라인 카드 그리드 추가
+4. `teacher.student.$userId.tsx` 신규 페이지 작성
+5. 시각 효과(애니메이션, hover) 다듬기
+6. 빌드 확인 + 두 교사 계정으로 동작 확인
+
+---
+
+**확인 요청**:
+- 위 5개 섹션 전부 한 번에 진행할까요, 아니면 **(1)전체 추이 차트 + (3)스파크라인 카드 + (4)학생 상세 페이지** 핵심 3개부터 먼저 구현할까요?
+- 학생 상세에서 **대화 내용 읽기**도 포함할까요? (사생활/허락 측면에서 학교 정책에 따라 다를 수 있어 확인합니다.)
