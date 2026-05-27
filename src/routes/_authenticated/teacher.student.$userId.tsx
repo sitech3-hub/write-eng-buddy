@@ -171,17 +171,17 @@ function StudentDetailPage() {
                   <AreaChart data={dailyData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
                     <defs>
                       <linearGradient id="g-student" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.35} />
-                        <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                        <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.35} />
+                        <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                    <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                    <YAxis allowDecimals={false} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" width={28} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                    <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="var(--muted-foreground)" />
+                    <YAxis allowDecimals={false} tick={{ fontSize: 11 }} stroke="var(--muted-foreground)" width={28} />
                     <Tooltip
                       contentStyle={{
-                        background: "hsl(var(--popover))",
-                        border: "1px solid hsl(var(--border))",
+                        background: "var(--popover)",
+                        border: "1px solid var(--border)",
                         borderRadius: 8,
                         fontSize: 12,
                       }}
@@ -189,7 +189,7 @@ function StudentDetailPage() {
                     <Area
                       type="monotone"
                       dataKey="count"
-                      stroke="hsl(var(--primary))"
+                      stroke="var(--primary)"
                       strokeWidth={2}
                       fill="url(#g-student)"
                     />
@@ -214,16 +214,16 @@ function StudentDetailPage() {
                         innerRadius={40}
                         outerRadius={68}
                         paddingAngle={2}
-                        stroke="hsl(var(--background))"
+                        stroke="var(--background)"
                       >
                         {typeData.map((_, i) => (
-                          <Cell key={i} fill={`hsl(var(--primary) / ${1 - i * 0.15})`} />
+                          <Cell key={i} fill={`color-mix(in oklab, var(--primary) ${Math.round((1 - i * 0.15)*100)}%, transparent)`} />
                         ))}
                       </Pie>
                       <Tooltip
                         contentStyle={{
-                          background: "hsl(var(--popover))",
-                          border: "1px solid hsl(var(--border))",
+                          background: "var(--popover)",
+                          border: "1px solid var(--border)",
                           borderRadius: 8,
                           fontSize: 12,
                         }}
@@ -339,8 +339,8 @@ function Heatmap({ data }: { data: { date: string; count: number }[] }) {
                   style={{
                     background:
                       d.count === 0
-                        ? "hsl(var(--muted))"
-                        : `hsl(var(--primary) / ${intensity})`,
+                        ? "var(--muted)"
+                        : `color-mix(in oklab, var(--primary) ${Math.round((intensity)*100)}%, transparent)`,
                   }}
                 />
               );
@@ -354,7 +354,7 @@ function Heatmap({ data }: { data: { date: string; count: number }[] }) {
           <span
             key={o}
             className="h-2.5 w-2.5 rounded-[2px]"
-            style={{ background: `hsl(var(--primary) / ${o})` }}
+            style={{ background: `color-mix(in oklab, var(--primary) ${Math.round((o)*100)}%, transparent)` }}
           />
         ))}
         <span>많음</span>

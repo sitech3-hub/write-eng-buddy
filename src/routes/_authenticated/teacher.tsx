@@ -166,26 +166,26 @@ function TeacherDashboard() {
               <AreaChart data={dailyData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
                 <defs>
                   <linearGradient id="g-activity" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.35} />
-                    <stop offset="100%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                    <stop offset="0%" stopColor="var(--primary)" stopOpacity={0.35} />
+                    <stop offset="100%" stopColor="var(--primary)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" width={28} />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                <XAxis dataKey="label" tick={{ fontSize: 11 }} stroke="var(--muted-foreground)" />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} stroke="var(--muted-foreground)" width={28} />
                 <Tooltip
                   contentStyle={{
-                    background: "hsl(var(--popover))",
-                    border: "1px solid hsl(var(--border))",
+                    background: "var(--popover)",
+                    border: "1px solid var(--border)",
                     borderRadius: 8,
                     fontSize: 12,
                   }}
-                  labelStyle={{ color: "hsl(var(--foreground))" }}
+                  labelStyle={{ color: "var(--foreground)" }}
                 />
                 <Area
                   type="monotone"
                   dataKey="count"
-                  stroke="hsl(var(--primary))"
+                  stroke="var(--primary)"
                   strokeWidth={2}
                   fill="url(#g-activity)"
                 />
@@ -208,16 +208,16 @@ function TeacherDashboard() {
                     innerRadius={42}
                     outerRadius={70}
                     paddingAngle={2}
-                    stroke="hsl(var(--background))"
+                    stroke="var(--background)"
                   >
                     {typeData.map((_, i) => (
-                      <Cell key={i} fill={`hsl(var(--primary) / ${1 - i * 0.15})`} />
+                      <Cell key={i} fill={`color-mix(in oklab, var(--primary) ${Math.round((1 - i * 0.15)*100)}%, transparent)`} />
                     ))}
                   </Pie>
                   <Tooltip
                     contentStyle={{
-                      background: "hsl(var(--popover))",
-                      border: "1px solid hsl(var(--border))",
+                      background: "var(--popover)",
+                      border: "1px solid var(--border)",
                       borderRadius: 8,
                       fontSize: 12,
                     }}
@@ -238,19 +238,19 @@ function TeacherDashboard() {
             ) : (
               <ResponsiveContainer>
                 <BarChart data={levelData} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                  <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" width={28} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke="var(--muted-foreground)" />
+                  <YAxis allowDecimals={false} tick={{ fontSize: 11 }} stroke="var(--muted-foreground)" width={28} />
                   <Tooltip
-                    cursor={{ fill: "hsl(var(--muted) / 0.4)" }}
+                    cursor={{ fill: "color-mix(in oklab, var(--muted) 40%, transparent)" }}
                     contentStyle={{
-                      background: "hsl(var(--popover))",
-                      border: "1px solid hsl(var(--border))",
+                      background: "var(--popover)",
+                      border: "1px solid var(--border)",
                       borderRadius: 8,
                       fontSize: 12,
                     }}
                   />
-                  <Bar dataKey="value" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="value" fill="var(--primary)" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -380,7 +380,7 @@ function Legend({ items }: { items: { name: string; value: number }[] }) {
         <span key={it.name} className="inline-flex items-center gap-1">
           <span
             className="inline-block h-2 w-2 rounded-sm"
-            style={{ background: `hsl(var(--primary) / ${1 - i * 0.15})` }}
+            style={{ background: `color-mix(in oklab, var(--primary) ${Math.round((1 - i * 0.15)*100)}%, transparent)` }}
           />
           {it.name} <span className="tabular-nums text-foreground">{it.value}</span>
         </span>
