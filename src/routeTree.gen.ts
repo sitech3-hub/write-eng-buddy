@@ -17,6 +17,8 @@ import { Route as AuthenticatedTeacherRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedChatRouteImport } from './routes/_authenticated/chat'
 import { Route as AuthenticatedChatIndexRouteImport } from './routes/_authenticated/chat.index'
 import { Route as AuthenticatedChatThreadIdRouteImport } from './routes/_authenticated/chat.$threadId'
+import { Route as AuthenticatedTeacherThreadThreadIdRouteImport } from './routes/_authenticated/teacher.thread.$threadId'
+import { Route as AuthenticatedTeacherStudentUserIdRouteImport } from './routes/_authenticated/teacher.student.$userId'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -58,23 +60,39 @@ const AuthenticatedChatThreadIdRoute =
     path: '/$threadId',
     getParentRoute: () => AuthenticatedChatRoute,
   } as any)
+const AuthenticatedTeacherThreadThreadIdRoute =
+  AuthenticatedTeacherThreadThreadIdRouteImport.update({
+    id: '/thread/$threadId',
+    path: '/thread/$threadId',
+    getParentRoute: () => AuthenticatedTeacherRoute,
+  } as any)
+const AuthenticatedTeacherStudentUserIdRoute =
+  AuthenticatedTeacherStudentUserIdRouteImport.update({
+    id: '/student/$userId',
+    path: '/student/$userId',
+    getParentRoute: () => AuthenticatedTeacherRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/chat': typeof AuthenticatedChatRouteWithChildren
-  '/teacher': typeof AuthenticatedTeacherRoute
+  '/teacher': typeof AuthenticatedTeacherRouteWithChildren
   '/api/chat': typeof ApiChatRoute
   '/chat/$threadId': typeof AuthenticatedChatThreadIdRoute
   '/chat/': typeof AuthenticatedChatIndexRoute
+  '/teacher/student/$userId': typeof AuthenticatedTeacherStudentUserIdRoute
+  '/teacher/thread/$threadId': typeof AuthenticatedTeacherThreadThreadIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
-  '/teacher': typeof AuthenticatedTeacherRoute
+  '/teacher': typeof AuthenticatedTeacherRouteWithChildren
   '/api/chat': typeof ApiChatRoute
   '/chat/$threadId': typeof AuthenticatedChatThreadIdRoute
   '/chat': typeof AuthenticatedChatIndexRoute
+  '/teacher/student/$userId': typeof AuthenticatedTeacherStudentUserIdRoute
+  '/teacher/thread/$threadId': typeof AuthenticatedTeacherThreadThreadIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -82,10 +100,12 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
   '/_authenticated/chat': typeof AuthenticatedChatRouteWithChildren
-  '/_authenticated/teacher': typeof AuthenticatedTeacherRoute
+  '/_authenticated/teacher': typeof AuthenticatedTeacherRouteWithChildren
   '/api/chat': typeof ApiChatRoute
   '/_authenticated/chat/$threadId': typeof AuthenticatedChatThreadIdRoute
   '/_authenticated/chat/': typeof AuthenticatedChatIndexRoute
+  '/_authenticated/teacher/student/$userId': typeof AuthenticatedTeacherStudentUserIdRoute
+  '/_authenticated/teacher/thread/$threadId': typeof AuthenticatedTeacherThreadThreadIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -97,8 +117,18 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/chat/$threadId'
     | '/chat/'
+    | '/teacher/student/$userId'
+    | '/teacher/thread/$threadId'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/teacher' | '/api/chat' | '/chat/$threadId' | '/chat'
+  to:
+    | '/'
+    | '/login'
+    | '/teacher'
+    | '/api/chat'
+    | '/chat/$threadId'
+    | '/chat'
+    | '/teacher/student/$userId'
+    | '/teacher/thread/$threadId'
   id:
     | '__root__'
     | '/'
@@ -109,6 +139,8 @@ export interface FileRouteTypes {
     | '/api/chat'
     | '/_authenticated/chat/$threadId'
     | '/_authenticated/chat/'
+    | '/_authenticated/teacher/student/$userId'
+    | '/_authenticated/teacher/thread/$threadId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -176,6 +208,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedChatThreadIdRouteImport
       parentRoute: typeof AuthenticatedChatRoute
     }
+    '/_authenticated/teacher/thread/$threadId': {
+      id: '/_authenticated/teacher/thread/$threadId'
+      path: '/thread/$threadId'
+      fullPath: '/teacher/thread/$threadId'
+      preLoaderRoute: typeof AuthenticatedTeacherThreadThreadIdRouteImport
+      parentRoute: typeof AuthenticatedTeacherRoute
+    }
+    '/_authenticated/teacher/student/$userId': {
+      id: '/_authenticated/teacher/student/$userId'
+      path: '/student/$userId'
+      fullPath: '/teacher/student/$userId'
+      preLoaderRoute: typeof AuthenticatedTeacherStudentUserIdRouteImport
+      parentRoute: typeof AuthenticatedTeacherRoute
+    }
   }
 }
 
@@ -192,14 +238,29 @@ const AuthenticatedChatRouteChildren: AuthenticatedChatRouteChildren = {
 const AuthenticatedChatRouteWithChildren =
   AuthenticatedChatRoute._addFileChildren(AuthenticatedChatRouteChildren)
 
+interface AuthenticatedTeacherRouteChildren {
+  AuthenticatedTeacherStudentUserIdRoute: typeof AuthenticatedTeacherStudentUserIdRoute
+  AuthenticatedTeacherThreadThreadIdRoute: typeof AuthenticatedTeacherThreadThreadIdRoute
+}
+
+const AuthenticatedTeacherRouteChildren: AuthenticatedTeacherRouteChildren = {
+  AuthenticatedTeacherStudentUserIdRoute:
+    AuthenticatedTeacherStudentUserIdRoute,
+  AuthenticatedTeacherThreadThreadIdRoute:
+    AuthenticatedTeacherThreadThreadIdRoute,
+}
+
+const AuthenticatedTeacherRouteWithChildren =
+  AuthenticatedTeacherRoute._addFileChildren(AuthenticatedTeacherRouteChildren)
+
 interface AuthenticatedRouteChildren {
   AuthenticatedChatRoute: typeof AuthenticatedChatRouteWithChildren
-  AuthenticatedTeacherRoute: typeof AuthenticatedTeacherRoute
+  AuthenticatedTeacherRoute: typeof AuthenticatedTeacherRouteWithChildren
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedChatRoute: AuthenticatedChatRouteWithChildren,
-  AuthenticatedTeacherRoute: AuthenticatedTeacherRoute,
+  AuthenticatedTeacherRoute: AuthenticatedTeacherRouteWithChildren,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
