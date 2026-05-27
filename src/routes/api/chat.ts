@@ -206,7 +206,9 @@ export const Route = createFileRoute("/api/chat")({
         }
 
         const gateway = createLovableAiGatewayProvider(lovableKey);
-        const model = gateway("google/gemini-3-flash-preview");
+        const activeModelId = getActiveModelId();
+        const model = gateway(activeModelId);
+        console.info(`[chat] using model ${activeModelId}`);
 
         const system = buildSystemPrompt(
           level ?? thread.level,
@@ -243,6 +245,11 @@ export const Route = createFileRoute("/api/chat")({
           model,
           system,
           messages: await convertToModelMessages(messages),
+          onError: ({ error }) => {
+            // Bump fallback chain so the NEXT request uses a cheaper model.
+            const kind = bumpModelOnError(error);
+            console.error(`[chat] stream error (${kind ?? "other"}):`, error);
+          },
         });
 
         return result.toUIMessageStreamResponse({
@@ -256,6 +263,16 @@ export const Route = createFileRoute("/api/chat")({
                 parts: responseMessage.parts as never,
               });
             }
+          },
+          onError: (error) => {
+            const kind = classifyGatewayError(error);
+            if (kind === "credit") {
+              return "AI 사용 크레딧이 모두 소진되었습니다. 잠시 후 자동으로 더 가벼운 모델로 재시도됩니다. 계속 발생하면 워크스페이스 설정에서 크레딧을 추가해 주세요.";
+            }
+            if (kind === "rate") {
+              return "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.";
+            }
+            return "응답 생성 중 오류가 발생했어요. 다시 시도해 주세요.";
           },
         });
       },
