@@ -3,7 +3,12 @@ import { streamText, convertToModelMessages, type UIMessage } from "ai";
 import { createClient } from "@supabase/supabase-js";
 import "@tanstack/react-start";
 
-import { createLovableAiGatewayProvider } from "@/lib/ai-gateway";
+import {
+  bumpModelOnError,
+  classifyGatewayError,
+  createLovableAiGatewayProvider,
+  getActiveModelId,
+} from "@/lib/ai-gateway";
 
 type ChatBody = {
   messages?: UIMessage[];
