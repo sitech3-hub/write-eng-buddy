@@ -1,67 +1,57 @@
-# 영어 쓰기 연습 AI 에이전트 계획
 
-## 컨셉
-대한민국 중3~고1 학생을 위한 **영어 쓰기 연습 도구**. AI 튜터가 주제(prompt)를 제시하고, 학생이 영어로 글을 쓰면 문법·어휘·표현을 교정하고 한국어로 친절히 피드백한다. 대화는 스레드로 저장되어 다시 열어볼 수 있다.
+# AI 모델 자동 폴백 로직 추가
 
-## 주요 기능
+`/api/chat` 서버 라우트에서 Lovable AI Gateway 호출 시 크레딧 소진(402) 또는 레이트 리밋(429)이 감지되면 자동으로 더 저렴/가벼운 모델로 재시도하는 로직을 추가합니다.
 
-1. **로그인 / 회원가입** (Lovable Cloud — 이메일+구글)
-2. **스레드 목록 사이드바**
-   - 새 연습 시작 버튼
-   - 과거 스레드 클릭 시 해당 URL(`/chat/$threadId`)로 이동
-3. **연습 시작 화면 (새 스레드)**
-   - 레벨 선택: 중3 / 고1
-   - 연습 유형 선택: 자유 작문 / 일기 / 이메일 / 의견 쓰기 / 주제 제시받기
-   - 시작하면 AI가 한국어로 안내 + 영어 작문 prompt 제시
-4. **쓰기 대화창**
-   - 학생이 영어로 작성 → 전송
-   - AI 응답 구성 (Markdown 렌더링):
-     - ✅ **잘한 점**
-     - ✏️ **교정** (원문 → 수정문, 차이점 강조)
-     - 📚 **문법/표현 설명** (한국어)
-     - 💡 **모범 답안 예시**
-     - 🔁 **이어서 써볼 후속 질문**
-   - AI Elements 기반 채팅 UI, 응답 스트리밍, 타이핑 인디케이터
-5. **스레드 자동 제목 생성** (첫 메시지 기반)
+## 동작 방식
 
-## 기술 구조 (기술 섹션)
+1. **기본 모델**: `google/gemini-3-flash-preview` (현재와 동일)
+2. **1차 폴백**: `google/gemini-2.5-flash` (균형형, 저렴)
+3. **2차 폴백**: `google/gemini-2.5-flash-lite` (최저가, 빠름)
 
-- **스택**: TanStack Start + Lovable Cloud(Supabase) + AI SDK + Lovable AI Gateway
-- **모델**: `google/gemini-3-flash-preview` (기본), 시스템 프롬프트에 학습 레벨·교정 형식 명시
-- **라우트**
-  - `/` — 로그인 안 됐으면 `/login`, 됐으면 가장 최근 스레드 또는 신규 생성 후 `/chat/$threadId`로 이동
-  - `/login` — 이메일/구글 로그인
-  - `/_authenticated/chat/$threadId` — 스레드별 채팅 페이지
-- **서버**
-  - `src/routes/api/chat.ts` — `streamText` + `toUIMessageStreamResponse`, `onFinish`에서 메시지 저장
-  - `src/lib/threads.functions.ts` — `requireSupabaseAuth` 미들웨어로 스레드 CRUD
-- **DB 테이블**
-  - `threads` (id uuid, user_id, title, level, exercise_type, created_at, updated_at)
-  - `messages` (id uuid 자동, thread_id, role, parts jsonb, created_at) — UUID는 DB 생성, AI SDK `msg_...` ID는 저장 안 함
-  - RLS: `auth.uid() = user_id`로 본인 데이터만 접근
-- **클라이언트**
-  - `useChat({ id: threadId, messages: initialMessages, transport })` — threadId로 remount
-  - AI Elements: `Conversation`, `Message`, `MessageResponse`, `PromptInput`, `PromptInputTextarea`, `PromptInputFooter`, `PromptInputSubmit`, `Shimmer`
-  - 어시스턴트 메시지는 배경 없이, 사용자 메시지는 `primary`/`primary-foreground` 버블
-- **AI Gateway**: `createLovableAiGatewayProvider` 헬퍼, `LOVABLE_API_KEY` 서버 전용
-- **start.ts**: `attachSupabaseAuth` functionMiddleware 등록 확인
+스트리밍 시작 전에 모델을 한 번 ping(짧은 헬스 체크) 하기보다는, 실제 `streamText` 호출 시 발생하는 에러를 catch 해서 다음 모델로 넘어가는 방식이 가장 자연스럽습니다. AI SDK는 `streamText`가 비동기로 stream을 반환하므로, 첫 청크 직전 에러를 잡기 위해 `onError` 콜백 + try/catch 조합을 씁니다.
 
-## 디자인
-- 미니멀, 화이트 베이스 + 포인트 컬러 1개(예: indigo)
-- 모바일 우선, 사이드바는 모바일에서 Sheet
-- 충분한 여백, 명확한 위계, shadcn/ui 기반
-- 학생 친화적이지만 너무 유치하지 않은 톤
+## 변경 파일
 
-## 구축 순서
-1. Lovable Cloud 활성화 + 로그인/회원가입(이메일+구글)
-2. `threads`, `messages` 테이블 + RLS 마이그레이션
-3. AI Gateway 헬퍼 + `/api/chat` 서버 라우트(시스템 프롬프트 포함)
-4. 스레드 CRUD server functions
-5. AI Elements 설치 후 채팅 UI 구성 (사이드바 + 스레드 페이지)
-6. 새 스레드 시작 화면(레벨/유형 선택)
-7. 두 스레드 생성 → 새로고침 검증
+### 1. `src/lib/ai-gateway.ts`
+- 모델 폴백 체인 상수 추가: `MODEL_FALLBACK_CHAIN = ["google/gemini-3-flash-preview", "google/gemini-2.5-flash", "google/gemini-2.5-flash-lite"]`
+- 헬퍼 함수 `isCreditOrRateLimitError(err)` 추가: 에러 메시지/상태코드에서 402, 429, "payment required", "rate limit", "quota" 패턴을 감지
 
-## 향후 확장(이번 범위 외)
-- 말하기 연습(음성 입력)
-- 학습 통계, 자주 틀리는 문법 추적
-- 단어장 자동 저장
+### 2. `src/routes/api/chat.ts`
+- 기존 단일 `streamText({ model, ... })` 호출을 폴백 루프로 감싼다:
+  ```
+  for (const modelId of MODEL_FALLBACK_CHAIN) {
+    try {
+      const result = streamText({
+        model: gateway(modelId),
+        system,
+        messages,
+        onError: ({ error }) => { /* log + 다음 시도 신호 */ },
+      });
+      // 첫 응답이 안전하게 시작되면 그대로 반환
+      return result.toUIMessageStreamResponse({ ... });
+    } catch (err) {
+      if (isCreditOrRateLimitError(err) && hasNextModel) continue;
+      throw err;
+    }
+  }
+  ```
+- 폴백이 발생한 경우, 어시스턴트 메시지 저장 시 사용된 모델 ID를 콘솔에 로그 (디버깅용). 메시지 parts에는 영향을 주지 않음.
+- 모든 모델 소진 시 사용자에게 명확한 한국어 에러 응답:
+  - 402 → "AI 사용 크레딧이 모두 소진되었습니다. 워크스페이스 설정에서 크레딧을 추가해 주세요."
+  - 429 → "요청이 너무 많습니다. 잠시 후 다시 시도해 주세요."
+
+### 3. 클라이언트 토스트 (선택)
+`src/routes/_authenticated/chat.$threadId.tsx`의 `useChat` `onError`에서 위 에러 메시지가 오면 토스트로 표시 (이미 onError가 있다면 해당 분기 보강, 없으면 추가).
+
+## 주의사항
+
+- 스트리밍 중간에 모델을 바꿀 수는 없음 — 폴백은 **스트림이 시작되기 전** 또는 **즉시 실패**한 경우에만 동작.
+- 폴백 발생 시 시스템 프롬프트/메시지는 동일하게 재사용 (CEFR/난이도 유지).
+- 모델 자체 능력 차이로 응답 품질이 다소 떨어질 수 있다는 점은 사용자에게 별도 안내하지 않음 (UX 매끄럽게).
+
+## 검증
+
+- 빌드 통과 확인
+- `/api/chat` 정상 동작 확인 (기본 모델 호출되는지)
+- 모델 ID를 일부러 잘못 넣어 폴백이 동작하는지 로그 확인 (개발 중 임시)
