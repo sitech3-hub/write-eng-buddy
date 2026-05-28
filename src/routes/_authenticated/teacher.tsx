@@ -369,7 +369,7 @@ function TeacherDashboard() {
 
         {!isLoading && filteredStudents.length > 0 && (
           <ul className="divide-y">
-            {students.map((s, idx) => (
+            {filteredStudents.map((s, idx) => (
               <li
                 key={s.user_id}
                 className="group cursor-pointer px-5 py-3 transition-colors hover:bg-muted/40 animate-in fade-in slide-in-from-bottom-1"
@@ -388,6 +388,16 @@ function TeacherDashboard() {
                         {s.display_name ?? "—"}
                       </span>
                       <span className="truncate text-xs text-muted-foreground">{s.email ?? "—"}</span>
+                      {s.top_level && (
+                        <span className="inline-flex items-center rounded-md bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-secondary-foreground">
+                          {LEVEL_LABEL[s.top_level] ?? s.top_level}
+                        </span>
+                      )}
+                      {s.top_type && (
+                        <span className="inline-flex items-center rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                          {TYPE_LABEL[s.top_type] ?? s.top_type}
+                        </span>
+                      )}
                     </div>
                     <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
                       <span>
