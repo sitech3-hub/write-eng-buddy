@@ -1,9 +1,15 @@
-export const TEACHER_EMAILS = [
-  "sitech3@simin.hs.kr",
-  "hongjinwoo@simin.hs.kr",
-] as const;
+function getTeacherEmails(): string[] {
+  const raw =
+    (typeof process !== "undefined" && process.env?.TEACHER_EMAILS) ||
+    (typeof import.meta !== "undefined" && import.meta.env?.VITE_TEACHER_EMAILS) ||
+    "";
+  return raw
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+}
 
 export function isTeacherEmail(email: string | null | undefined): boolean {
   if (!email) return false;
-  return TEACHER_EMAILS.includes(email.toLowerCase() as (typeof TEACHER_EMAILS)[number]);
+  return getTeacherEmails().includes(email.toLowerCase());
 }
