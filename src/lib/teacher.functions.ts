@@ -14,6 +14,8 @@ export type StudentRow = {
   last_active_at: string | null;
   /** Daily message counts for the last 14 days (oldest -> newest). */
   daily_sparkline: number[];
+  top_type: string | null;
+  top_level: string | null;
 };
 
 export type DailyPoint = { date: string; count: number };
