@@ -1,15 +1,9 @@
-function getTeacherEmails(): string[] {
-  const raw =
-    (typeof process !== "undefined" && process.env?.TEACHER_EMAILS) ||
-    (typeof import.meta !== "undefined" && import.meta.env?.VITE_TEACHER_EMAILS) ||
-    "";
-  return raw
-    .split(",")
-    .map((e: string) => e.trim().toLowerCase())
-    .filter(Boolean);
-}
+const TEACHER_EMAILS = [
+  "sitech3@simin.hs.kr",
+  "hongjinwoo@simin.hs.kr",
+].map((e) => e.toLowerCase());
 
 export function isTeacherEmail(email: string | null | undefined): boolean {
   if (!email) return false;
-  return getTeacherEmails().includes(email.toLowerCase());
+  return TEACHER_EMAILS.includes(email.toLowerCase());
 }
