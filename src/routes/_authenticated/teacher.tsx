@@ -88,16 +88,29 @@ function useCountUp(value: number, duration = 700): number {
 function TeacherDashboard() {
   const navigate = useNavigate();
   const fetchOverview = useServerFn(getTeacherOverview);
-  const [ready, setReady] = useState(false);
+  const [hasSession, setHasSession] = useState(false);
 
   useEffect(() => {
-    supabase.auth.getSession().then(() => setReady(true));
-  }, []);
+    let active = true;
+    supabase.auth.getUser().then(({ data }) => {
+      if (!active) return;
+      if (data.user) setHasSession(true);
+      else navigate({ to: "/login" });
+    });
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, session) => {
+      setHasSession(!!session);
+    });
+    return () => {
+      active = false;
+      sub.subscription.unsubscribe();
+    };
+  }, [navigate]);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["teacher-overview"],
     queryFn: () => fetchOverview(),
-    enabled: ready,
+    enabled: hasSession,
+    retry: false,
   });
 
   const students: StudentRow[] = data?.students ?? [];
