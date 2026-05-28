@@ -72,10 +72,26 @@ export const getTeacherOverview = createServerFn({ method: "GET" })
     // Per-user aggregates
     const tCount = new Map<string, number>();
     const tLast = new Map<string, string>();
+    const userTypeCount = new Map<string, Map<string, number>>();
+    const userLevelCount = new Map<string, Map<string, number>>();
     for (const t of threads ?? []) {
       tCount.set(t.user_id, (tCount.get(t.user_id) ?? 0) + 1);
       const prev = tLast.get(t.user_id);
       if (!prev || (t.updated_at && t.updated_at > prev)) tLast.set(t.user_id, t.updated_at);
+
+      let tc = userTypeCount.get(t.user_id);
+      if (!tc) {
+        tc = new Map<string, number>();
+        userTypeCount.set(t.user_id, tc);
+      }
+      tc.set(t.exercise_type, (tc.get(t.exercise_type) ?? 0) + 1);
+
+      let lc = userLevelCount.get(t.user_id);
+      if (!lc) {
+        lc = new Map<string, number>();
+        userLevelCount.set(t.user_id, lc);
+      }
+      lc.set(t.level, (lc.get(t.level) ?? 0) + 1);
     }
 
     const mCount = new Map<string, number>();
