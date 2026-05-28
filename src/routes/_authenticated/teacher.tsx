@@ -298,11 +298,55 @@ function TeacherDashboard() {
 
       {/* Students */}
       <div className="rounded-xl border bg-card">
-        <div className="flex items-center justify-between border-b px-5 py-3">
+        <div className="flex flex-col gap-3 border-b px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2 text-sm font-semibold">
             <Users className="h-4 w-4" /> 학생별 누적 기록
           </div>
-          <span className="text-xs text-muted-foreground">{totalStudents}명</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="이름 또는 이메일 검색"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-8 w-40 pl-8 text-xs sm:w-48"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+            <Select value={levelFilter} onValueChange={setLevelFilter}>
+              <SelectTrigger className="h-8 w-28 text-xs">
+                <SelectValue placeholder="레벨" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">전체 레벨</SelectItem>
+                {Object.entries(LEVEL_LABEL).map(([k, v]) => (
+                  <SelectItem key={k} value={k}>{v}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="h-8 w-28 text-xs">
+                <SelectValue placeholder="유형" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">전체 유형</SelectItem>
+                {Object.entries(TYPE_LABEL).map(([k, v]) => (
+                  <SelectItem key={k} value={k}>{v}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <span className="text-xs text-muted-foreground">
+              {filteredStudents.length} / {totalStudents}명
+            </span>
+          </div>
         </div>
 
         {isLoading && (
@@ -319,8 +363,11 @@ function TeacherDashboard() {
         {!isLoading && !error && students.length === 0 && (
           <p className="px-5 py-10 text-center text-sm text-muted-foreground">아직 학생 데이터가 없어요.</p>
         )}
+        {!isLoading && !error && students.length > 0 && filteredStudents.length === 0 && (
+          <p className="px-5 py-10 text-center text-sm text-muted-foreground">조건에 맞는 학생이 없어요.</p>
+        )}
 
-        {!isLoading && students.length > 0 && (
+        {!isLoading && filteredStudents.length > 0 && (
           <ul className="divide-y">
             {students.map((s, idx) => (
               <li
