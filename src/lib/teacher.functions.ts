@@ -129,6 +129,19 @@ export const getTeacherOverview = createServerFn({ method: "GET" })
       levelMap.set(t.level, (levelMap.get(t.level) ?? 0) + 1);
     }
 
+    function topKey(map: Map<string, number> | undefined): string | null {
+      if (!map || map.size === 0) return null;
+      let best: string | null = null;
+      let bestN = -1;
+      for (const [k, v] of map) {
+        if (v > bestN) {
+          bestN = v;
+          best = k;
+        }
+      }
+      return best;
+    }
+
     const students: StudentRow[] = users.map((u) => ({
       user_id: u.id,
       email: u.email ?? null,
@@ -143,6 +156,8 @@ export const getTeacherOverview = createServerFn({ method: "GET" })
       last_active_at: tLast.get(u.id) ?? null,
       daily_sparkline:
         sparkPerUser.get(u.id) ?? new Array<number>(sparkWindow.length).fill(0),
+      top_type: topKey(userTypeCount.get(u.id)),
+      top_level: topKey(userLevelCount.get(u.id)),
     }));
 
     students.sort((a, b) => {
