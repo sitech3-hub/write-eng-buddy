@@ -14,6 +14,8 @@ export type StudentRow = {
   last_active_at: string | null;
   /** Daily message counts for the last 14 days (oldest -> newest). */
   daily_sparkline: number[];
+  top_type: string | null;
+  top_level: string | null;
 };
 
 export type DailyPoint = { date: string; count: number };
@@ -70,10 +72,26 @@ export const getTeacherOverview = createServerFn({ method: "GET" })
     // Per-user aggregates
     const tCount = new Map<string, number>();
     const tLast = new Map<string, string>();
+    const userTypeCount = new Map<string, Map<string, number>>();
+    const userLevelCount = new Map<string, Map<string, number>>();
     for (const t of threads ?? []) {
       tCount.set(t.user_id, (tCount.get(t.user_id) ?? 0) + 1);
       const prev = tLast.get(t.user_id);
       if (!prev || (t.updated_at && t.updated_at > prev)) tLast.set(t.user_id, t.updated_at);
+
+      let tc = userTypeCount.get(t.user_id);
+      if (!tc) {
+        tc = new Map<string, number>();
+        userTypeCount.set(t.user_id, tc);
+      }
+      tc.set(t.exercise_type, (tc.get(t.exercise_type) ?? 0) + 1);
+
+      let lc = userLevelCount.get(t.user_id);
+      if (!lc) {
+        lc = new Map<string, number>();
+        userLevelCount.set(t.user_id, lc);
+      }
+      lc.set(t.level, (lc.get(t.level) ?? 0) + 1);
     }
 
     const mCount = new Map<string, number>();
@@ -111,6 +129,19 @@ export const getTeacherOverview = createServerFn({ method: "GET" })
       levelMap.set(t.level, (levelMap.get(t.level) ?? 0) + 1);
     }
 
+    function topKey(map: Map<string, number> | undefined): string | null {
+      if (!map || map.size === 0) return null;
+      let best: string | null = null;
+      let bestN = -1;
+      for (const [k, v] of map) {
+        if (v > bestN) {
+          bestN = v;
+          best = k;
+        }
+      }
+      return best;
+    }
+
     const students: StudentRow[] = users.map((u) => ({
       user_id: u.id,
       email: u.email ?? null,
@@ -125,6 +156,8 @@ export const getTeacherOverview = createServerFn({ method: "GET" })
       last_active_at: tLast.get(u.id) ?? null,
       daily_sparkline:
         sparkPerUser.get(u.id) ?? new Array<number>(sparkWindow.length).fill(0),
+      top_type: topKey(userTypeCount.get(u.id)),
+      top_level: topKey(userLevelCount.get(u.id)),
     }));
 
     students.sort((a, b) => {

@@ -16,12 +16,20 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { ArrowLeft, ChevronRight, Users } from "lucide-react";
+import { ArrowLeft, ChevronRight, Search, Users, X } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { getTeacherOverview, type StudentRow } from "@/lib/teacher.functions";
 import { isTeacherEmail } from "@/lib/teacher-config";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export const Route = createFileRoute("/_authenticated/teacher")({
   beforeLoad: async () => {
@@ -89,6 +97,9 @@ function TeacherDashboard() {
   const navigate = useNavigate();
   const fetchOverview = useServerFn(getTeacherOverview);
   const [hasSession, setHasSession] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [levelFilter, setLevelFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
 
   useEffect(() => {
     let active = true;
@@ -114,6 +125,20 @@ function TeacherDashboard() {
   });
 
   const students: StudentRow[] = data?.students ?? [];
+
+  const filteredStudents = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return students.filter((s) => {
+      const matchQuery =
+        !q ||
+        (s.display_name ?? "").toLowerCase().includes(q) ||
+        (s.email ?? "").toLowerCase().includes(q);
+      const matchLevel = levelFilter === "all" || s.top_level === levelFilter;
+      const matchType = typeFilter === "all" || s.top_type === typeFilter;
+      return matchQuery && matchLevel && matchType;
+    });
+  }, [students, searchQuery, levelFilter, typeFilter]);
+
   const totalStudents = students.length;
   const activeStudents = students.filter((s) => s.message_count > 0).length;
   const totalThreads = students.reduce((acc, s) => acc + s.thread_count, 0);
@@ -273,11 +298,55 @@ function TeacherDashboard() {
 
       {/* Students */}
       <div className="rounded-xl border bg-card">
-        <div className="flex items-center justify-between border-b px-5 py-3">
+        <div className="flex flex-col gap-3 border-b px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2 text-sm font-semibold">
             <Users className="h-4 w-4" /> 학생별 누적 기록
           </div>
-          <span className="text-xs text-muted-foreground">{totalStudents}명</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="이름 또는 이메일 검색"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-8 w-40 pl-8 text-xs sm:w-48"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+            <Select value={levelFilter} onValueChange={setLevelFilter}>
+              <SelectTrigger className="h-8 w-28 text-xs">
+                <SelectValue placeholder="레벨" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">전체 레벨</SelectItem>
+                {Object.entries(LEVEL_LABEL).map(([k, v]) => (
+                  <SelectItem key={k} value={k}>{v}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="h-8 w-28 text-xs">
+                <SelectValue placeholder="유형" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">전체 유형</SelectItem>
+                {Object.entries(TYPE_LABEL).map(([k, v]) => (
+                  <SelectItem key={k} value={k}>{v}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <span className="text-xs text-muted-foreground">
+              {filteredStudents.length} / {totalStudents}명
+            </span>
+          </div>
         </div>
 
         {isLoading && (
@@ -294,10 +363,13 @@ function TeacherDashboard() {
         {!isLoading && !error && students.length === 0 && (
           <p className="px-5 py-10 text-center text-sm text-muted-foreground">아직 학생 데이터가 없어요.</p>
         )}
+        {!isLoading && !error && students.length > 0 && filteredStudents.length === 0 && (
+          <p className="px-5 py-10 text-center text-sm text-muted-foreground">조건에 맞는 학생이 없어요.</p>
+        )}
 
-        {!isLoading && students.length > 0 && (
+        {!isLoading && filteredStudents.length > 0 && (
           <ul className="divide-y">
-            {students.map((s, idx) => (
+            {filteredStudents.map((s, idx) => (
               <li
                 key={s.user_id}
                 className="group cursor-pointer px-5 py-3 transition-colors hover:bg-muted/40 animate-in fade-in slide-in-from-bottom-1"
@@ -316,6 +388,16 @@ function TeacherDashboard() {
                         {s.display_name ?? "—"}
                       </span>
                       <span className="truncate text-xs text-muted-foreground">{s.email ?? "—"}</span>
+                      {s.top_level && (
+                        <span className="inline-flex items-center rounded-md bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-secondary-foreground">
+                          {LEVEL_LABEL[s.top_level] ?? s.top_level}
+                        </span>
+                      )}
+                      {s.top_type && (
+                        <span className="inline-flex items-center rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary">
+                          {TYPE_LABEL[s.top_type] ?? s.top_type}
+                        </span>
+                      )}
                     </div>
                     <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
                       <span>
