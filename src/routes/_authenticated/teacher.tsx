@@ -97,6 +97,9 @@ function TeacherDashboard() {
   const navigate = useNavigate();
   const fetchOverview = useServerFn(getTeacherOverview);
   const [hasSession, setHasSession] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [levelFilter, setLevelFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
 
   useEffect(() => {
     let active = true;
@@ -122,6 +125,20 @@ function TeacherDashboard() {
   });
 
   const students: StudentRow[] = data?.students ?? [];
+
+  const filteredStudents = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return students.filter((s) => {
+      const matchQuery =
+        !q ||
+        (s.display_name ?? "").toLowerCase().includes(q) ||
+        (s.email ?? "").toLowerCase().includes(q);
+      const matchLevel = levelFilter === "all" || s.top_level === levelFilter;
+      const matchType = typeFilter === "all" || s.top_type === typeFilter;
+      return matchQuery && matchLevel && matchType;
+    });
+  }, [students, searchQuery, levelFilter, typeFilter]);
+
   const totalStudents = students.length;
   const activeStudents = students.filter((s) => s.message_count > 0).length;
   const totalThreads = students.reduce((acc, s) => acc + s.thread_count, 0);
