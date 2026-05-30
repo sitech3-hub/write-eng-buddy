@@ -101,6 +101,7 @@ function TeacherDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [levelFilter, setLevelFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [openThreadId, setOpenThreadId] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
