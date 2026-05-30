@@ -1,6 +1,7 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { ConversationDialog } from "@/components/ConversationDialog";
 import { useQuery } from "@tanstack/react-query";
 import {
   Area,
