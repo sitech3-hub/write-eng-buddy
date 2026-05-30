@@ -25,7 +25,7 @@ const TYPE_LABEL: Record<string, string> = {
   diary: "일기",
   email: "이메일",
   opinion: "의견",
-  topic: "주제제시",
+  prompt: "주제제시",
 };
 const LEVEL_LABEL: Record<string, string> = {
   middle1: "중1",

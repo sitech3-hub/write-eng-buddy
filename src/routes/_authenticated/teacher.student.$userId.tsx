@@ -37,7 +37,7 @@ const TYPE_LABEL: Record<string, string> = {
   diary: "일기",
   email: "이메일",
   opinion: "의견",
-  topic: "주제제시",
+  prompt: "주제제시",
 };
 const LEVEL_LABEL: Record<string, string> = {
   middle1: "중1",
@@ -264,7 +264,21 @@ function StudentDetailPage() {
                         <span>· {formatDate(t.updated_at)}</span>
                       </div>
                     </div>
-                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-7 shrink-0 text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate({
+                          to: "/teacher/thread/$threadId",
+                          params: { threadId: t.id },
+                        });
+                      }}
+                    >
+                      대화 보기
+                      <ChevronRight className="ml-0.5 h-3 w-3" />
+                    </Button>
                   </li>
                 ))}
               </ul>
