@@ -20,6 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getStudentDetail } from "@/lib/teacher.functions";
 import { isTeacherEmail } from "@/lib/teacher-config";
 import { Button } from "@/components/ui/button";
+import { ConversationDialog } from "@/components/ConversationDialog";
 
 export const Route = createFileRoute("/_authenticated/teacher/student/$userId")({
   beforeLoad: async () => {
@@ -70,6 +71,7 @@ function StudentDetailPage() {
   const navigate = useNavigate();
   const fetchDetail = useServerFn(getStudentDetail);
   const [ready, setReady] = useState(false);
+  const [openThreadId, setOpenThreadId] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(() => setReady(true));
