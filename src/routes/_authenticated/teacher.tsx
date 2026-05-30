@@ -16,7 +16,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { ArrowLeft, ChevronRight, Search, Users, X } from "lucide-react";
+import { ArrowLeft, ChevronRight, MessageSquare, Search, Users, X } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { getTeacherOverview, type StudentRow } from "@/lib/teacher.functions";
@@ -294,6 +294,68 @@ function TeacherDashboard() {
             )}
           </div>
         </ChartCard>
+      </div>
+
+      {/* Recent conversations */}
+      <div className="mb-6 rounded-xl border bg-card">
+        <div className="flex items-center justify-between border-b px-5 py-3">
+          <div className="flex items-center gap-2 text-sm font-semibold">
+            <MessageSquare className="h-4 w-4" /> 최근 대화
+          </div>
+          <span className="text-xs text-muted-foreground">
+            최신 {data?.recentThreads?.length ?? 0}건
+          </span>
+        </div>
+        {isLoading && (
+          <p className="px-5 py-10 text-center text-sm text-muted-foreground">불러오는 중...</p>
+        )}
+        {!isLoading && (data?.recentThreads?.length ?? 0) === 0 && (
+          <p className="px-5 py-10 text-center text-sm text-muted-foreground">
+            아직 대화 기록이 없어요.
+          </p>
+        )}
+        {!isLoading && data?.recentThreads && data.recentThreads.length > 0 && (
+          <ul className="divide-y">
+            {data.recentThreads.map((t) => (
+              <li
+                key={t.id}
+                className="group flex cursor-pointer items-center gap-3 px-5 py-3 transition-colors hover:bg-muted/40"
+                onClick={() =>
+                  navigate({ to: "/teacher/thread/$threadId", params: { threadId: t.id } })
+                }
+              >
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
+                  {(t.student_name ?? t.student_email ?? "?").trim().charAt(0).toUpperCase()}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-medium">{t.title}</div>
+                  <div className="mt-0.5 flex flex-wrap gap-x-2 text-[11px] text-muted-foreground">
+                    <span className="truncate">{t.student_name ?? t.student_email ?? "—"}</span>
+                    <span>· {TYPE_LABEL[t.exercise_type] ?? t.exercise_type}</span>
+                    <span>· {LEVEL_LABEL[t.level] ?? t.level}</span>
+                    <span>· 메시지 {t.message_count}</span>
+                    <span>· {formatDate(t.updated_at)}</span>
+                  </div>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 shrink-0 text-xs"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigate({
+                      to: "/teacher/thread/$threadId",
+                      params: { threadId: t.id },
+                    });
+                  }}
+                >
+                  대화 보기
+                  <ChevronRight className="ml-0.5 h-3 w-3" />
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {/* Students */}

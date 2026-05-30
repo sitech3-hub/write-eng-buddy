@@ -21,11 +21,24 @@ export type StudentRow = {
 export type DailyPoint = { date: string; count: number };
 export type DistPoint = { key: string; count: number };
 
+export type RecentThread = {
+  id: string;
+  title: string;
+  level: string;
+  exercise_type: string;
+  updated_at: string;
+  user_id: string;
+  student_name: string | null;
+  student_email: string | null;
+  message_count: number;
+};
+
 export type TeacherOverview = {
   students: StudentRow[];
   dailyActivity: DailyPoint[]; // last 30 days
   exerciseTypeDist: DistPoint[];
   levelDist: DistPoint[];
+  recentThreads: RecentThread[];
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -65,9 +78,16 @@ export const getTeacherOverview = createServerFn({ method: "GET" })
     const users = usersData.users ?? [];
 
     const [{ data: threads }, { data: messages }] = await Promise.all([
-      supabaseAdmin.from("threads").select("user_id, updated_at, exercise_type, level"),
-      supabaseAdmin.from("messages").select("user_id, created_at, role"),
+      supabaseAdmin
+        .from("threads")
+        .select("id, title, user_id, updated_at, exercise_type, level"),
+      supabaseAdmin.from("messages").select("thread_id, user_id, created_at, role"),
     ]);
+
+    const msgPerThread = new Map<string, number>();
+    for (const m of messages ?? []) {
+      msgPerThread.set(m.thread_id, (msgPerThread.get(m.thread_id) ?? 0) + 1);
+    }
 
     // Per-user aggregates
     const tCount = new Map<string, number>();
@@ -166,6 +186,29 @@ export const getTeacherOverview = createServerFn({ method: "GET" })
       return bv.localeCompare(av);
     });
 
+    const userById = new Map(users.map((u) => [u.id, u] as const));
+    const recentThreads: RecentThread[] = (threads ?? [])
+      .slice()
+      .sort((a, b) => (b.updated_at ?? "").localeCompare(a.updated_at ?? ""))
+      .slice(0, 20)
+      .map((t) => {
+        const u = userById.get(t.user_id);
+        return {
+          id: t.id,
+          title: t.title,
+          level: t.level,
+          exercise_type: t.exercise_type,
+          updated_at: t.updated_at,
+          user_id: t.user_id,
+          student_name:
+            (u?.user_metadata?.full_name as string | undefined) ??
+            (u?.user_metadata?.name as string | undefined) ??
+            null,
+          student_email: u?.email ?? null,
+          message_count: msgPerThread.get(t.id) ?? 0,
+        };
+      });
+
     return {
       students,
       dailyActivity: dailyWindow.map((d, i) => ({ date: d, count: dailyArr[i] })),
@@ -175,6 +218,7 @@ export const getTeacherOverview = createServerFn({ method: "GET" })
       levelDist: [...levelMap.entries()]
         .map(([key, count]) => ({ key, count }))
         .sort((a, b) => b.count - a.count),
+      recentThreads,
     };
   });
 
