@@ -1,6 +1,7 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
+import { ConversationDialog } from "@/components/ConversationDialog";
 import { useQuery } from "@tanstack/react-query";
 import {
   Area,
@@ -100,6 +101,7 @@ function TeacherDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [levelFilter, setLevelFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [openThreadId, setOpenThreadId] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -320,9 +322,7 @@ function TeacherDashboard() {
               <li
                 key={t.id}
                 className="group flex cursor-pointer items-center gap-3 px-5 py-3 transition-colors hover:bg-muted/40"
-                onClick={() =>
-                  navigate({ to: "/teacher/thread/$threadId", params: { threadId: t.id } })
-                }
+                onClick={() => setOpenThreadId(t.id)}
               >
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-semibold text-primary">
                   {(t.student_name ?? t.student_email ?? "?").trim().charAt(0).toUpperCase()}
@@ -343,10 +343,7 @@ function TeacherDashboard() {
                   className="h-7 shrink-0 text-xs"
                   onClick={(e) => {
                     e.stopPropagation();
-                    navigate({
-                      to: "/teacher/thread/$threadId",
-                      params: { threadId: t.id },
-                    });
+                    setOpenThreadId(t.id);
                   }}
                 >
                   대화 보기
@@ -479,6 +476,12 @@ function TeacherDashboard() {
           </ul>
         )}
       </div>
+
+      <ConversationDialog
+        threadId={openThreadId}
+        open={!!openThreadId}
+        onOpenChange={(o) => !o && setOpenThreadId(null)}
+      />
     </div>
   );
 }

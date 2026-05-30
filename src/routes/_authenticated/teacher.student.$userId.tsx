@@ -20,6 +20,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { getStudentDetail } from "@/lib/teacher.functions";
 import { isTeacherEmail } from "@/lib/teacher-config";
 import { Button } from "@/components/ui/button";
+import { ConversationDialog } from "@/components/ConversationDialog";
 
 export const Route = createFileRoute("/_authenticated/teacher/student/$userId")({
   beforeLoad: async () => {
@@ -70,6 +71,7 @@ function StudentDetailPage() {
   const navigate = useNavigate();
   const fetchDetail = useServerFn(getStudentDetail);
   const [ready, setReady] = useState(false);
+  const [openThreadId, setOpenThreadId] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(() => setReady(true));
@@ -247,12 +249,7 @@ function StudentDetailPage() {
                   <li
                     key={t.id}
                     className="group flex cursor-pointer items-center gap-3 py-3 transition-colors hover:bg-muted/40"
-                    onClick={() =>
-                      navigate({
-                        to: "/teacher/thread/$threadId",
-                        params: { threadId: t.id },
-                      })
-                    }
+                    onClick={() => setOpenThreadId(t.id)}
                   >
                     <MessageSquare className="h-4 w-4 shrink-0 text-muted-foreground" />
                     <div className="min-w-0 flex-1">
@@ -270,10 +267,7 @@ function StudentDetailPage() {
                       className="h-7 shrink-0 text-xs"
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate({
-                          to: "/teacher/thread/$threadId",
-                          params: { threadId: t.id },
-                        });
+                        setOpenThreadId(t.id);
                       }}
                     >
                       대화 보기
@@ -286,6 +280,12 @@ function StudentDetailPage() {
           </Card>
         </>
       )}
+
+      <ConversationDialog
+        threadId={openThreadId}
+        open={!!openThreadId}
+        onOpenChange={(o) => !o && setOpenThreadId(null)}
+      />
     </div>
   );
 }
