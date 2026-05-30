@@ -249,12 +249,7 @@ function StudentDetailPage() {
                   <li
                     key={t.id}
                     className="group flex cursor-pointer items-center gap-3 py-3 transition-colors hover:bg-muted/40"
-                    onClick={() =>
-                      navigate({
-                        to: "/teacher/thread/$threadId",
-                        params: { threadId: t.id },
-                      })
-                    }
+                    onClick={() => setOpenThreadId(t.id)}
                   >
                     <MessageSquare className="h-4 w-4 shrink-0 text-muted-foreground" />
                     <div className="min-w-0 flex-1">
@@ -272,10 +267,7 @@ function StudentDetailPage() {
                       className="h-7 shrink-0 text-xs"
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate({
-                          to: "/teacher/thread/$threadId",
-                          params: { threadId: t.id },
-                        });
+                        setOpenThreadId(t.id);
                       }}
                     >
                       대화 보기
@@ -288,6 +280,12 @@ function StudentDetailPage() {
           </Card>
         </>
       )}
+
+      <ConversationDialog
+        threadId={openThreadId}
+        open={!!openThreadId}
+        onOpenChange={(o) => !o && setOpenThreadId(null)}
+      />
     </div>
   );
 }
