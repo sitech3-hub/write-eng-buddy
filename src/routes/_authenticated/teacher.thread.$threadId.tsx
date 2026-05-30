@@ -10,6 +10,7 @@ import { isTeacherEmail } from "@/lib/teacher-config";
 import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/teacher/thread/$threadId")({
+  ssr: false,
   beforeLoad: async () => {
     if (typeof window === "undefined") return;
     const { data } = await supabase.auth.getUser();
