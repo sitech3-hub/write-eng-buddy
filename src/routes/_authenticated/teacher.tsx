@@ -476,6 +476,12 @@ function TeacherDashboard() {
           </ul>
         )}
       </div>
+
+      <ConversationDialog
+        threadId={openThreadId}
+        open={!!openThreadId}
+        onOpenChange={(o) => !o && setOpenThreadId(null)}
+      />
     </div>
   );
 }
