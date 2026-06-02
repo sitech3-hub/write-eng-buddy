@@ -1,12 +1,24 @@
-## Plan: 하드코딩 교사 이메일 복원
+# Plan: 사용자 프롬프트 모음 마크다운 파일 저장
 
-### Context
-현재 `src/lib/teacher-config.ts`는 `TEACHER_EMAILS` / `VITE_TEACHER_EMAILS` 환경 변수를 읽어오도록 구성되어 있습니다. 사용자가 두 개의 구글 계정(sitech3@simin.hs.kr, hongjinwoo@simin.hs.kr)만 하드코딩으로 교사 대시보드에 접근 가능하도록 변경해 달라고 요청했습니다.
+## Context
+이전 대화에서 정리한 웹앱 구현 프롬프트 모음을 사용자가 `/mnt/documents/`에 마크다운 파일로 저장해 달라고 요청했습니다.
 
-### Changes
-- `src/lib/teacher-config.ts`: `getTeacherEmails()` 내부를 환경 변수 읽기 대신 정적 배열 `['sitech3@simin.hs.kr', 'hongjinwoo@simin.hs.kr']`로 교체.
-- `isTeacherEmail()` 함수는 기존 로직 그대로 유지 (대소문자 무시, 포함 여부 확인).
+## Changes
+- `/mnt/documents/prompts.md` 파일 생성
+- 내용: #86 대화 메시지에서 정리한 시간순 프롬프트 목록 (9개 카테고리, 21개 핵심 요청)
+- 형식: 마크다운 헤딩 + 번호 목록
 
-### Impact
-- `/teacher` 경로의 `beforeLoad` 및 서버 함수(`getTeacherOverview`, `getStudentDetail`, `getStudentThread`)의 권한 검증이 해당 2개 이메일로 고정됨.
-- 환경 변수 설정 없이도 즉시 동작.
+## Content Outline
+1. 초기 컨셉 정의 (#1, #3)
+2. 핵심 학습 로직 / 시스템 프롬프트 (#9, #11, #13)
+3. 작성물보내기 (#17, #19)
+4. 대화 시작 패턴 다양화 (#25)
+5. 학년·CEFR 레벨 체계 (#27, #29, #31, #33)
+6. 디자인 & 반응형 (#39, #41)
+7. 인증 & 교사 대시보드 (#43, #53, #57, #61, #69, #73, #79)
+8. 운영 최적화 (#49)
+9. 버그 보고 참고
+
+## Impact
+- 사용자가 프로젝트 전체 요구사역 히스토리를 파일로 보관 가능
+- 코드 변경 없음
