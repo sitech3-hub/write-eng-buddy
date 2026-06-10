@@ -131,6 +131,9 @@ function ThreadChat({ threadId, initial, meta }: { threadId: string; initial: UI
         <ChatToolbar messages={messages} threadId={threadId} exerciseType={meta?.exercise_type} />
       <LevelInfoBar level={meta?.level} />
       <ModelFallbackBanner status={status} />
+      {error && !isLoading && (
+        <RetryBanner error={error} onRetry={() => regenerate()} />
+      )}
       <ScaffoldIndicator stage={scaffoldStage} />
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6">
