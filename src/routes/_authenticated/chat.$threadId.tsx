@@ -3,7 +3,9 @@ import { useEffect, useRef, useState, useMemo } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import ReactMarkdown from "react-markdown";
-import { Send, Download, FileText, Printer } from "lucide-react";
+import { Send, Download, FileText, Printer, AlertTriangle } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { getModelStatus } from "@/lib/ai-status.functions";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -126,8 +128,9 @@ function ThreadChat({ threadId, initial, meta }: { threadId: string; initial: UI
 
   return (
     <div className="flex h-full flex-col">
-      <ChatToolbar messages={messages} threadId={threadId} exerciseType={meta?.exercise_type} />
+        <ChatToolbar messages={messages} threadId={threadId} exerciseType={meta?.exercise_type} />
       <LevelInfoBar level={meta?.level} />
+      <ModelFallbackBanner status={status} />
       <ScaffoldIndicator stage={scaffoldStage} />
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6">
@@ -432,6 +435,75 @@ function LevelInfoBar({ level }: { level?: string }) {
         <span className="text-[11px] text-muted-foreground">
           목표: {target.sentences}문장 / {target.paragraphs}단락 · 어휘 {target.vocab}단어
         </span>
+      </div>
+    </div>
+  );
+}
+
+
+type ModelStatus = Awaited<ReturnType<typeof getModelStatus>>;
+
+const MODEL_DISPLAY: Record<string, { label: string; tier: string; tone: string }> = {
+  "google/gemini-3-flash-preview": { label: "Gemini 3 Flash (Preview)", tier: "기본 모델", tone: "최고 품질의 응답 속도와 정확도" },
+  "google/gemini-2.5-flash": { label: "Gemini 2.5 Flash", tier: "절약 모델 1단계", tone: "응답 품질은 유사하나 표현이 단순해질 수 있음" },
+  "google/gemini-2.5-flash-lite": { label: "Gemini 2.5 Flash Lite", tier: "최소 비용 모델", tone: "응답 속도는 가장 빠르지만 교정 정확도와 설명 깊이가 떨어질 수 있음" },
+};
+
+function ModelFallbackBanner({ status }: { status: string }) {
+  const fetchStatus = useServerFn(getModelStatus);
+  const [s, setS] = useState<ModelStatus | null>(null);
+  const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchStatus().then((r) => { if (!cancelled) setS(r); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [fetchStatus]);
+
+  const prev = useRef(status);
+  useEffect(() => {
+    if (prev.current !== "ready" && status === "ready") {
+      fetchStatus().then((r) => { setS(r); setDismissed(false); }).catch(() => {});
+    }
+    prev.current = status;
+  }, [status, fetchStatus]);
+
+  if (!s || s.activeIndex === 0 || dismissed) return null;
+
+  const current = MODEL_DISPLAY[s.activeModelId] ?? { label: s.activeModelId, tier: `절약 모델 ${s.activeIndex}단계`, tone: "응답 품질이 낮아질 수 있음" };
+  const primary = MODEL_DISPLAY[s.primaryModelId] ?? { label: s.primaryModelId, tier: "기본 모델", tone: "" };
+  const reason = s.lastErrorKind === "credit"
+    ? "AI 크레딧 한도에 도달"
+    : s.lastErrorKind === "rate"
+    ? "요청량 한도(Rate limit) 초과"
+    : "기본 모델 호출 실패";
+  const minutesLeft = Math.max(1, Math.ceil((s.resetAfterMs - (Date.now() - s.changedAt)) / 60000));
+
+  return (
+    <div className="border-b border-amber-200 bg-amber-50">
+      <div className="mx-auto flex w-full max-w-3xl items-start gap-3 px-4 py-2.5 sm:px-6">
+        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+        <div className="flex-1 text-xs text-amber-900">
+          <p className="font-semibold">
+            현재 가벼운 모델로 자동 전환되었습니다 — {current.label}
+          </p>
+          <p className="mt-0.5 text-amber-800">
+            <span className="font-medium">사유:</span> {reason} → {primary.label}에서 {current.label}({current.tier})로 폴백.
+          </p>
+          <p className="mt-0.5 text-amber-800">
+            <span className="font-medium">품질 영향:</span> {current.tone}. 복잡한 문법 설명·긴 모범 답안의 정교함이 다소 줄어들 수 있어요.
+          </p>
+          <p className="mt-0.5 text-[11px] text-amber-700">
+            약 {minutesLeft}분 후 기본 모델로 자동 재시도합니다.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setDismissed(true)}
+          className="text-[11px] font-medium text-amber-700 hover:text-amber-900"
+        >
+          닫기
+        </button>
       </div>
     </div>
   );
