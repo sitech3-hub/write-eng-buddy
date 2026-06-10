@@ -189,6 +189,13 @@ function TeacherDashboard() {
             학생들의 학습 누적 기록과 활동 추이를 한눈에 확인하세요.
           </p>
         </div>
+        <ReportExportButtons
+          students={filteredStudents}
+          totalStudents={totalStudents}
+          activeStudents={activeStudents}
+          totalThreads={totalThreads}
+          totalMessages={totalMessages}
+        />
       </div>
 
       <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
