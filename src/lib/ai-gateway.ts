@@ -18,21 +18,39 @@ export const MODEL_FALLBACK_CHAIN = [
   "google/gemini-2.5-flash-lite",
 ] as const;
 
+export type GatewayErrorKind = "credit" | "rate" | null;
+
 // In-memory state shared across requests in the same server instance.
 let activeIndex = 0;
 let activeChangedAt = Date.now();
+let lastErrorKind: GatewayErrorKind = null;
+let lastErrorAt: number | null = null;
 const RESET_AFTER_MS = 10 * 60 * 1000; // retry primary after 10 minutes
 
 export function getActiveModelId(): string {
   if (activeIndex > 0 && Date.now() - activeChangedAt > RESET_AFTER_MS) {
     activeIndex = 0;
     activeChangedAt = Date.now();
+    lastErrorKind = null;
     console.info("[ai-gateway] cooldown elapsed, retrying primary model");
   }
   return MODEL_FALLBACK_CHAIN[activeIndex];
 }
 
-export type GatewayErrorKind = "credit" | "rate" | null;
+export function getModelStatusSnapshot() {
+  // Trigger cooldown check first
+  getActiveModelId();
+  return {
+    activeIndex,
+    activeModelId: MODEL_FALLBACK_CHAIN[activeIndex],
+    primaryModelId: MODEL_FALLBACK_CHAIN[0],
+    chain: [...MODEL_FALLBACK_CHAIN] as string[],
+    lastErrorKind,
+    lastErrorAt,
+    changedAt: activeChangedAt,
+    resetAfterMs: RESET_AFTER_MS,
+  };
+}
 
 export function classifyGatewayError(err: unknown): GatewayErrorKind {
   const anyErr = err as { message?: string; statusCode?: number; status?: number; cause?: unknown };
@@ -52,6 +70,8 @@ export function classifyGatewayError(err: unknown): GatewayErrorKind {
 export function bumpModelOnError(err: unknown): GatewayErrorKind {
   const kind = classifyGatewayError(err);
   if (!kind) return null;
+  lastErrorKind = kind;
+  lastErrorAt = Date.now();
   if (activeIndex < MODEL_FALLBACK_CHAIN.length - 1) {
     activeIndex++;
     activeChangedAt = Date.now();
