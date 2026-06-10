@@ -3,7 +3,9 @@ import { useEffect, useRef, useState, useMemo } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import ReactMarkdown from "react-markdown";
-import { Send, Download, FileText, Printer } from "lucide-react";
+import { Send, Download, FileText, Printer, AlertTriangle } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { getModelStatus } from "@/lib/ai-status.functions";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
