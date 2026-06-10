@@ -79,19 +79,19 @@ function ThreadChat({ threadId, initial, meta }: { threadId: string; initial: UI
     },
   }), [threadId, meta]);
 
-  const { messages, sendMessage, status } = useChat({
+  const { messages, sendMessage, status, regenerate, error } = useChat({
     id: threadId,
     messages: initial,
     transport,
     onError: (e) => {
       console.error(e);
       const msg = e?.message ?? "";
-      if (msg.includes("크레딧")) {
+      if (msg.includes("rate-limit-user") || msg.includes("잠시 후") || msg.includes("너무 많")) {
+        toast.warning("요청이 너무 많습니다", { description: "잠시 후 ‘다시 시도’를 눌러주세요." });
+      } else if (msg.includes("크레딧")) {
         toast.error("AI 크레딧 소진", { description: msg });
-      } else if (msg.includes("너무 많")) {
-        toast.warning("요청이 너무 많습니다", { description: msg });
       } else if (msg) {
-        toast.error("오류", { description: msg });
+        toast.error("오류가 발생했어요", { description: "‘다시 시도’를 눌러보세요." });
       }
     },
   });
