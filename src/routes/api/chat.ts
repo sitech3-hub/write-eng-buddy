@@ -206,6 +206,26 @@ export const Route = createFileRoute("/api/chat")({
           return new Response("Forbidden", { status: 403 });
         }
 
+        // ── Per-user rate limit (protect workspace credits from one student)
+        // Limit: max 20 user messages per 60 seconds across all threads.
+        // Counts only role='user' messages so streaming/assistant writes don't
+        // count. RLS scopes the query to this user automatically.
+        const RATE_WINDOW_MS = 60_000;
+        const RATE_MAX = 20;
+        const since = new Date(Date.now() - RATE_WINDOW_MS).toISOString();
+        const { count: recentCount } = await supabase
+          .from("messages")
+          .select("id", { count: "exact", head: true })
+          .eq("user_id", userId)
+          .eq("role", "user")
+          .gte("created_at", since);
+        if ((recentCount ?? 0) >= RATE_MAX) {
+          return new Response(
+            "rate-limit-user: 잠시 후 다시 시도해 주세요 (1분당 최대 20개 메시지).",
+            { status: 429 },
+          );
+        }
+
         const lovableKey = process.env.LOVABLE_API_KEY;
         if (!lovableKey) {
           return new Response("LOVABLE_API_KEY missing", { status: 500 });
