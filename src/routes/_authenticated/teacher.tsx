@@ -573,3 +573,147 @@ function Sparkline({ values }: { values: number[] }) {
     </div>
   );
 }
+
+function ReportExportButtons({
+  students,
+  totalStudents,
+  activeStudents,
+  totalThreads,
+  totalMessages,
+}: {
+  students: StudentRow[];
+  totalStudents: number;
+  activeStudents: number;
+  totalThreads: number;
+  totalMessages: number;
+}) {
+  const stamp = useMemo(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }, []);
+
+  const csvEscape = (v: unknown) => {
+    const s = v == null ? "" : String(v);
+    if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+    return s;
+  };
+
+  const downloadCsv = () => {
+    if (students.length === 0) return;
+    const headers = [
+      "이름",
+      "이메일",
+      "주 레벨",
+      "주 유형",
+      "연습 수",
+      "메시지 수",
+      "마지막 활동",
+    ];
+    const rows = students.map((s) => [
+      s.display_name ?? "",
+      s.email ?? "",
+      LEVEL_LABEL[s.top_level ?? ""] ?? s.top_level ?? "",
+      TYPE_LABEL[s.top_type ?? ""] ?? s.top_type ?? "",
+      s.thread_count,
+      s.message_count,
+      s.last_active_at ?? "",
+    ]);
+    const csv =
+      [headers, ...rows].map((r) => r.map(csvEscape).join(",")).join("\n");
+    // BOM for Excel Korean compatibility
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `students-report-${stamp}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const downloadPdf = () => {
+    if (students.length === 0) return;
+    const esc = (s: string) =>
+      s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const rowsHtml = students
+      .map(
+        (s) => `<tr>
+          <td>${esc(s.display_name ?? "—")}</td>
+          <td>${esc(s.email ?? "—")}</td>
+          <td>${esc(LEVEL_LABEL[s.top_level ?? ""] ?? s.top_level ?? "—")}</td>
+          <td>${esc(TYPE_LABEL[s.top_type ?? ""] ?? s.top_type ?? "—")}</td>
+          <td class="num">${s.thread_count}</td>
+          <td class="num">${s.message_count}</td>
+          <td>${s.last_active_at ? esc(formatDate(s.last_active_at)) : "—"}</td>
+        </tr>`,
+      )
+      .join("");
+    const html = `<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"/>
+<title>학생 학습 리포트 — ${stamp}</title>
+<style>
+  @page { size: A4 landscape; margin: 14mm; }
+  body { font-family: -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", "Segoe UI", Roboto, sans-serif; color: #111; }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .meta { font-size: 12px; color: #555; margin-bottom: 16px; }
+  .summary { display: flex; gap: 18px; font-size: 12px; margin: 12px 0 20px; }
+  .summary div { background: #f4f4f5; padding: 8px 12px; border-radius: 6px; }
+  .summary b { font-size: 16px; display: block; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th, td { border-bottom: 1px solid #e4e4e7; padding: 8px 10px; text-align: left; }
+  th { background: #f9fafb; font-weight: 600; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tr:nth-child(even) td { background: #fafafa; }
+  .noprint { position: fixed; top: 12px; right: 12px; }
+  @media print { .noprint { display: none; } }
+  .noprint button { padding: 8px 14px; font-size: 13px; cursor: pointer; }
+</style></head><body>
+  <div class="noprint"><button onclick="window.print()">PDF로 저장 / 인쇄</button></div>
+  <h1>학생 학습 리포트</h1>
+  <div class="meta">생성일: ${stamp}</div>
+  <div class="summary">
+    <div><span>등록 학생</span><b>${totalStudents}</b></div>
+    <div><span>활동 학생</span><b>${activeStudents}</b></div>
+    <div><span>총 연습</span><b>${totalThreads}</b></div>
+    <div><span>총 메시지</span><b>${totalMessages}</b></div>
+  </div>
+  <table>
+    <thead><tr>
+      <th>이름</th><th>이메일</th><th>주 레벨</th><th>주 유형</th>
+      <th class="num">연습</th><th class="num">메시지</th><th>마지막 활동</th>
+    </tr></thead>
+    <tbody>${rowsHtml}</tbody>
+  </table>
+  <script>window.addEventListener('load', () => setTimeout(() => window.print(), 300));</script>
+</body></html>`;
+    const w = window.open("", "_blank");
+    if (!w) return;
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+  };
+
+  return (
+    <div className="flex shrink-0 gap-2">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={downloadCsv}
+        disabled={students.length === 0}
+        className="h-8 gap-1.5 text-xs"
+      >
+        <FileText className="h-3.5 w-3.5" /> CSV
+      </Button>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={downloadPdf}
+        disabled={students.length === 0}
+        className="h-8 gap-1.5 text-xs"
+      >
+        <Printer className="h-3.5 w-3.5" /> PDF 리포트
+      </Button>
+    </div>
+  );
+}
