@@ -17,7 +17,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { ArrowLeft, ChevronRight, Download, FileText, MessageSquare, Printer, Search, Users, X } from "lucide-react";
+import { ArrowLeft, ChevronRight, FileText, MessageSquare, Printer, Search, Users, X } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { getTeacherOverview, type StudentRow } from "@/lib/teacher.functions";
