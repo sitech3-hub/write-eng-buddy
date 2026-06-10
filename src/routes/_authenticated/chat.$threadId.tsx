@@ -463,6 +463,17 @@ function ModelFallbackBanner({ status }: { status: string }) {
     return () => { cancelled = true; };
   }, [fetchStatus]);
 
+  // Poll while streaming so a mid-stream fallback (the gateway bumped the
+  // active model after onError) is reflected without waiting for the user's
+  // next turn.
+  useEffect(() => {
+    if (status !== "submitted" && status !== "streaming") return;
+    const id = setInterval(() => {
+      fetchStatus().then((r) => setS(r)).catch(() => {});
+    }, 2500);
+    return () => clearInterval(id);
+  }, [status, fetchStatus]);
+
   const prev = useRef(status);
   useEffect(() => {
     if (prev.current !== "ready" && status === "ready") {
