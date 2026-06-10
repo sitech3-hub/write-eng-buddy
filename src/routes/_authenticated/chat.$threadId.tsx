@@ -79,19 +79,19 @@ function ThreadChat({ threadId, initial, meta }: { threadId: string; initial: UI
     },
   }), [threadId, meta]);
 
-  const { messages, sendMessage, status } = useChat({
+  const { messages, sendMessage, status, regenerate, error } = useChat({
     id: threadId,
     messages: initial,
     transport,
     onError: (e) => {
       console.error(e);
       const msg = e?.message ?? "";
-      if (msg.includes("크레딧")) {
+      if (msg.includes("rate-limit-user") || msg.includes("잠시 후") || msg.includes("너무 많")) {
+        toast.warning("요청이 너무 많습니다", { description: "잠시 후 ‘다시 시도’를 눌러주세요." });
+      } else if (msg.includes("크레딧")) {
         toast.error("AI 크레딧 소진", { description: msg });
-      } else if (msg.includes("너무 많")) {
-        toast.warning("요청이 너무 많습니다", { description: msg });
       } else if (msg) {
-        toast.error("오류", { description: msg });
+        toast.error("오류가 발생했어요", { description: "‘다시 시도’를 눌러보세요." });
       }
     },
   });
@@ -131,6 +131,9 @@ function ThreadChat({ threadId, initial, meta }: { threadId: string; initial: UI
         <ChatToolbar messages={messages} threadId={threadId} exerciseType={meta?.exercise_type} />
       <LevelInfoBar level={meta?.level} />
       <ModelFallbackBanner status={status} />
+      {error && !isLoading && (
+        <RetryBanner error={error} onRetry={() => regenerate()} />
+      )}
       <ScaffoldIndicator stage={scaffoldStage} />
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6">
@@ -460,6 +463,17 @@ function ModelFallbackBanner({ status }: { status: string }) {
     return () => { cancelled = true; };
   }, [fetchStatus]);
 
+  // Poll while streaming so a mid-stream fallback (the gateway bumped the
+  // active model after onError) is reflected without waiting for the user's
+  // next turn.
+  useEffect(() => {
+    if (status !== "submitted" && status !== "streaming") return;
+    const id = setInterval(() => {
+      fetchStatus().then((r) => setS(r)).catch(() => {});
+    }, 2500);
+    return () => clearInterval(id);
+  }, [status, fetchStatus]);
+
   const prev = useRef(status);
   useEffect(() => {
     if (prev.current !== "ready" && status === "ready") {
@@ -759,5 +773,35 @@ function ChatToolbar({
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+function RetryBanner({ error, onRetry }: { error: Error; onRetry: () => void }) {
+  const msg = error.message ?? "";
+  const isRate = msg.includes("rate-limit-user") || msg.includes("너무 많") || msg.includes("잠시 후");
+  const isCredit = msg.includes("크레딧");
+  const label = isRate
+    ? "요청이 너무 많습니다"
+    : isCredit
+    ? "AI 크레딧이 소진되었습니다"
+    : "응답 생성에 실패했어요";
+  const detail = isRate
+    ? "잠시 기다린 뒤 다시 시도해 주세요."
+    : isCredit
+    ? "잠시 후 가벼운 모델로 자동 재시도되거나, 워크스페이스 크레딧을 추가해 주세요."
+    : "네트워크 또는 모델 오류가 발생했어요.";
+  return (
+    <div className="border-b border-rose-200 bg-rose-50">
+      <div className="mx-auto flex w-full max-w-3xl items-start gap-3 px-4 py-2.5 sm:px-6">
+        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
+        <div className="flex-1 text-xs text-rose-900">
+          <p className="font-semibold">{label}</p>
+          <p className="mt-0.5 text-rose-800">{detail}</p>
+        </div>
+        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={onRetry}>
+          다시 시도
+        </Button>
+      </div>
+    </div>
   );
 }
