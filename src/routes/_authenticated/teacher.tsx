@@ -105,6 +105,11 @@ function TeacherDashboard() {
   const [levelFilter, setLevelFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [openThreadId, setOpenThreadId] = useState<string | null>(null);
+  // Date range (YYYY-MM-DD, inclusive). Empty string = unbounded.
+  const [dateFrom, setDateFrom] = useState<string>("");
+  const [dateTo, setDateTo] = useState<string>("");
+  // Selected student ids (empty = "all matching")
+  const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let active = true;
@@ -131,8 +136,14 @@ function TeacherDashboard() {
 
   const students: StudentRow[] = data?.students ?? [];
 
+  // Date range: convert to timestamps. `to` is end-of-day inclusive.
+  const fromTs = dateFrom ? new Date(`${dateFrom}T00:00:00`).getTime() : null;
+  const toTs = dateTo ? new Date(`${dateTo}T23:59:59.999`).getTime() : null;
+  const hasDateRange = fromTs !== null || toTs !== null;
+
   const filteredStudents = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
+    const idSel = selectedStudentIds;
     return students.filter((s) => {
       const matchQuery =
         !q ||
@@ -140,14 +151,24 @@ function TeacherDashboard() {
         (s.email ?? "").toLowerCase().includes(q);
       const matchLevel = levelFilter === "all" || s.top_level === levelFilter;
       const matchType = typeFilter === "all" || s.top_type === typeFilter;
-      return matchQuery && matchLevel && matchType;
+      const matchStudent = idSel.size === 0 || idSel.has(s.user_id);
+      let matchDate = true;
+      if (hasDateRange) {
+        if (!s.last_active_at) matchDate = false;
+        else {
+          const t = new Date(s.last_active_at).getTime();
+          if (fromTs !== null && t < fromTs) matchDate = false;
+          if (toTs !== null && t > toTs) matchDate = false;
+        }
+      }
+      return matchQuery && matchLevel && matchType && matchStudent && matchDate;
     });
-  }, [students, searchQuery, levelFilter, typeFilter]);
+  }, [students, searchQuery, levelFilter, typeFilter, selectedStudentIds, hasDateRange, fromTs, toTs]);
 
   const totalStudents = students.length;
-  const activeStudents = students.filter((s) => s.message_count > 0).length;
-  const totalThreads = students.reduce((acc, s) => acc + s.thread_count, 0);
-  const totalMessages = students.reduce((acc, s) => acc + s.message_count, 0);
+  const activeStudents = filteredStudents.filter((s) => s.message_count > 0).length;
+  const totalThreads = filteredStudents.reduce((acc, s) => acc + s.thread_count, 0);
+  const totalMessages = filteredStudents.reduce((acc, s) => acc + s.message_count, 0);
 
   const dailyData = useMemo(
     () =>
