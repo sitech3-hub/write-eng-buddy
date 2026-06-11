@@ -219,12 +219,31 @@ function TeacherDashboard() {
           activeStudents={activeStudents}
           totalThreads={totalThreads}
           totalMessages={totalMessages}
+          dateFrom={dateFrom}
+          dateTo={dateTo}
+          levelFilter={levelFilter}
+          typeFilter={typeFilter}
+          selectedCount={selectedStudentIds.size}
         />
       </div>
 
+      <ScopeFilterBar
+        dateFrom={dateFrom}
+        dateTo={dateTo}
+        onDateFromChange={setDateFrom}
+        onDateToChange={setDateTo}
+        levelFilter={levelFilter}
+        onLevelChange={setLevelFilter}
+        students={students}
+        selectedStudentIds={selectedStudentIds}
+        onSelectedStudentsChange={setSelectedStudentIds}
+        filteredCount={filteredStudents.length}
+        totalCount={totalStudents}
+      />
+
       <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="등록 학생" value={totalStudents} />
-        <StatCard label="활동 학생" value={activeStudents} hint={`전체 ${totalStudents}명 중`} />
+        <StatCard label="활동 학생" value={activeStudents} hint={`범위 내 ${filteredStudents.length}명 중`} />
         <StatCard label="총 연습 수" value={totalThreads} />
         <StatCard label="총 메시지 수" value={totalMessages} />
       </div>
