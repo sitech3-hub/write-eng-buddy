@@ -684,8 +684,9 @@ function ReportExportButtons({
       s.message_count,
       s.last_active_at ?? "",
     ]);
+    const meta = [[`# 범위: ${scopeLabel}`], [`# 생성일: ${stamp}`], []];
     const csv =
-      [headers, ...rows].map((r) => r.map(csvEscape).join(",")).join("\n");
+      [...meta, headers, ...rows].map((r) => r.map(csvEscape).join(",")).join("\n");
     // BOM for Excel Korean compatibility
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
