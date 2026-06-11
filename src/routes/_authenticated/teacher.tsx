@@ -1029,6 +1029,7 @@ function ScopeFilterBar({
                 onDateToChange("");
                 onLevelChange("all");
                 onSelectedStudentsChange(new Set());
+                onResetFilters?.();
               }}
             >
               초기화
