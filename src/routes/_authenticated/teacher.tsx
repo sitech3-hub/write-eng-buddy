@@ -17,13 +17,16 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { ArrowLeft, ChevronRight, FileText, MessageSquare, Printer, Search, Users, X } from "lucide-react";
+import { ArrowLeft, CalendarRange, ChevronRight, FileText, Filter, MessageSquare, Printer, Search, Users, X } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { getTeacherOverview, type StudentRow } from "@/lib/teacher.functions";
 import { isTeacherEmail } from "@/lib/teacher-config";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
@@ -102,6 +105,11 @@ function TeacherDashboard() {
   const [levelFilter, setLevelFilter] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [openThreadId, setOpenThreadId] = useState<string | null>(null);
+  // Date range (YYYY-MM-DD, inclusive). Empty string = unbounded.
+  const [dateFrom, setDateFrom] = useState<string>("");
+  const [dateTo, setDateTo] = useState<string>("");
+  // Selected student ids (empty = "all matching")
+  const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let active = true;
@@ -128,8 +136,14 @@ function TeacherDashboard() {
 
   const students: StudentRow[] = data?.students ?? [];
 
+  // Date range: convert to timestamps. `to` is end-of-day inclusive.
+  const fromTs = dateFrom ? new Date(`${dateFrom}T00:00:00`).getTime() : null;
+  const toTs = dateTo ? new Date(`${dateTo}T23:59:59.999`).getTime() : null;
+  const hasDateRange = fromTs !== null || toTs !== null;
+
   const filteredStudents = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
+    const idSel = selectedStudentIds;
     return students.filter((s) => {
       const matchQuery =
         !q ||
@@ -137,14 +151,24 @@ function TeacherDashboard() {
         (s.email ?? "").toLowerCase().includes(q);
       const matchLevel = levelFilter === "all" || s.top_level === levelFilter;
       const matchType = typeFilter === "all" || s.top_type === typeFilter;
-      return matchQuery && matchLevel && matchType;
+      const matchStudent = idSel.size === 0 || idSel.has(s.user_id);
+      let matchDate = true;
+      if (hasDateRange) {
+        if (!s.last_active_at) matchDate = false;
+        else {
+          const t = new Date(s.last_active_at).getTime();
+          if (fromTs !== null && t < fromTs) matchDate = false;
+          if (toTs !== null && t > toTs) matchDate = false;
+        }
+      }
+      return matchQuery && matchLevel && matchType && matchStudent && matchDate;
     });
-  }, [students, searchQuery, levelFilter, typeFilter]);
+  }, [students, searchQuery, levelFilter, typeFilter, selectedStudentIds, hasDateRange, fromTs, toTs]);
 
   const totalStudents = students.length;
-  const activeStudents = students.filter((s) => s.message_count > 0).length;
-  const totalThreads = students.reduce((acc, s) => acc + s.thread_count, 0);
-  const totalMessages = students.reduce((acc, s) => acc + s.message_count, 0);
+  const activeStudents = filteredStudents.filter((s) => s.message_count > 0).length;
+  const totalThreads = filteredStudents.reduce((acc, s) => acc + s.thread_count, 0);
+  const totalMessages = filteredStudents.reduce((acc, s) => acc + s.message_count, 0);
 
   const dailyData = useMemo(
     () =>
@@ -195,12 +219,31 @@ function TeacherDashboard() {
           activeStudents={activeStudents}
           totalThreads={totalThreads}
           totalMessages={totalMessages}
+          dateFrom={dateFrom}
+          dateTo={dateTo}
+          levelFilter={levelFilter}
+          typeFilter={typeFilter}
+          selectedCount={selectedStudentIds.size}
         />
       </div>
 
+      <ScopeFilterBar
+        dateFrom={dateFrom}
+        dateTo={dateTo}
+        onDateFromChange={setDateFrom}
+        onDateToChange={setDateTo}
+        levelFilter={levelFilter}
+        onLevelChange={setLevelFilter}
+        students={students}
+        selectedStudentIds={selectedStudentIds}
+        onSelectedStudentsChange={setSelectedStudentIds}
+        filteredCount={filteredStudents.length}
+        totalCount={totalStudents}
+      />
+
       <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard label="등록 학생" value={totalStudents} />
-        <StatCard label="활동 학생" value={activeStudents} hint={`전체 ${totalStudents}명 중`} />
+        <StatCard label="활동 학생" value={activeStudents} hint={`범위 내 ${filteredStudents.length}명 중`} />
         <StatCard label="총 연습 수" value={totalThreads} />
         <StatCard label="총 메시지 수" value={totalMessages} />
       </div>
@@ -580,17 +623,40 @@ function ReportExportButtons({
   activeStudents,
   totalThreads,
   totalMessages,
+  dateFrom,
+  dateTo,
+  levelFilter,
+  typeFilter,
+  selectedCount,
 }: {
   students: StudentRow[];
   totalStudents: number;
   activeStudents: number;
   totalThreads: number;
   totalMessages: number;
+  dateFrom: string;
+  dateTo: string;
+  levelFilter: string;
+  typeFilter: string;
+  selectedCount: number;
 }) {
   const stamp = useMemo(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   }, []);
+
+  const scopeLabel = useMemo(() => {
+    const parts: string[] = [];
+    if (dateFrom || dateTo) {
+      parts.push(`기간 ${dateFrom || "처음"} ~ ${dateTo || "오늘"}`);
+    } else {
+      parts.push("기간 전체");
+    }
+    parts.push(`반 ${levelFilter === "all" ? "전체" : LEVEL_LABEL[levelFilter] ?? levelFilter}`);
+    parts.push(`유형 ${typeFilter === "all" ? "전체" : TYPE_LABEL[typeFilter] ?? typeFilter}`);
+    parts.push(`학생 ${selectedCount === 0 ? "전체 매칭" : `${selectedCount}명 선택`}`);
+    return parts.join(" · ");
+  }, [dateFrom, dateTo, levelFilter, typeFilter, selectedCount]);
 
   const csvEscape = (v: unknown) => {
     const s = v == null ? "" : String(v);
@@ -618,8 +684,9 @@ function ReportExportButtons({
       s.message_count,
       s.last_active_at ?? "",
     ]);
+    const meta = [[`# 범위: ${scopeLabel}`], [`# 생성일: ${stamp}`], []];
     const csv =
-      [headers, ...rows].map((r) => r.map(csvEscape).join(",")).join("\n");
+      [...meta, headers, ...rows].map((r) => r.map(csvEscape).join(",")).join("\n");
     // BOM for Excel Korean compatibility
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
@@ -671,7 +738,7 @@ function ReportExportButtons({
 </style></head><body>
   <div class="noprint"><button onclick="window.print()">PDF로 저장 / 인쇄</button></div>
   <h1>학생 학습 리포트</h1>
-  <div class="meta">생성일: ${stamp}</div>
+  <div class="meta">생성일: ${stamp} · 범위: ${esc(scopeLabel)}</div>
   <div class="summary">
     <div><span>등록 학생</span><b>${totalStudents}</b></div>
     <div><span>활동 학생</span><b>${activeStudents}</b></div>
@@ -714,6 +781,226 @@ function ReportExportButtons({
       >
         <Printer className="h-3.5 w-3.5" /> PDF 리포트
       </Button>
+    </div>
+  );
+}
+
+function todayYmd(offsetDays = 0): string {
+  const d = new Date();
+  d.setDate(d.getDate() - offsetDays);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function ScopeFilterBar({
+  dateFrom,
+  dateTo,
+  onDateFromChange,
+  onDateToChange,
+  levelFilter,
+  onLevelChange,
+  students,
+  selectedStudentIds,
+  onSelectedStudentsChange,
+  filteredCount,
+  totalCount,
+}: {
+  dateFrom: string;
+  dateTo: string;
+  onDateFromChange: (v: string) => void;
+  onDateToChange: (v: string) => void;
+  levelFilter: string;
+  onLevelChange: (v: string) => void;
+  students: StudentRow[];
+  selectedStudentIds: Set<string>;
+  onSelectedStudentsChange: (s: Set<string>) => void;
+  filteredCount: number;
+  totalCount: number;
+}) {
+  const [studentSearch, setStudentSearch] = useState("");
+
+  const setPreset = (days: number | null) => {
+    if (days === null) {
+      onDateFromChange("");
+      onDateToChange("");
+    } else {
+      onDateFromChange(todayYmd(days - 1));
+      onDateToChange(todayYmd(0));
+    }
+  };
+
+  const toggleStudent = (id: string) => {
+    const next = new Set(selectedStudentIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    onSelectedStudentsChange(next);
+  };
+
+  const matchingStudents = useMemo(() => {
+    const q = studentSearch.trim().toLowerCase();
+    if (!q) return students;
+    return students.filter(
+      (s) =>
+        (s.display_name ?? "").toLowerCase().includes(q) ||
+        (s.email ?? "").toLowerCase().includes(q),
+    );
+  }, [students, studentSearch]);
+
+  const hasAnyFilter =
+    !!dateFrom || !!dateTo || levelFilter !== "all" || selectedStudentIds.size > 0;
+
+  return (
+    <div className="mb-6 rounded-xl border bg-card p-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+          <Filter className="h-3.5 w-3.5" /> 내보내기 범위
+        </div>
+
+        <div className="flex flex-wrap items-center gap-1.5">
+          <CalendarRange className="h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            type="date"
+            value={dateFrom}
+            max={dateTo || undefined}
+            onChange={(e) => onDateFromChange(e.target.value)}
+            className="h-8 w-[140px] text-xs"
+          />
+          <span className="text-xs text-muted-foreground">~</span>
+          <Input
+            type="date"
+            value={dateTo}
+            min={dateFrom || undefined}
+            onChange={(e) => onDateToChange(e.target.value)}
+            className="h-8 w-[140px] text-xs"
+          />
+          <div className="flex gap-1">
+            {[
+              { label: "7일", days: 7 },
+              { label: "30일", days: 30 },
+              { label: "90일", days: 90 },
+            ].map((p) => (
+              <Button
+                key={p.label}
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 px-2 text-[11px]"
+                onClick={() => setPreset(p.days)}
+              >
+                {p.label}
+              </Button>
+            ))}
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-[11px]"
+              onClick={() => setPreset(null)}
+            >
+              전체
+            </Button>
+          </div>
+        </div>
+
+        <div className="h-5 w-px bg-border" />
+
+        <Select value={levelFilter} onValueChange={onLevelChange}>
+          <SelectTrigger className="h-8 w-32 text-xs">
+            <SelectValue placeholder="반(레벨)" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">전체 반</SelectItem>
+            {Object.entries(LEVEL_LABEL).map(([k, v]) => (
+              <SelectItem key={k} value={k}>
+                {v}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
+              <Users className="h-3.5 w-3.5" />
+              학생 {selectedStudentIds.size === 0 ? "전체" : `${selectedStudentIds.size}명 선택`}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-72 p-2">
+            <Input
+              placeholder="이름/이메일 검색"
+              value={studentSearch}
+              onChange={(e) => setStudentSearch(e.target.value)}
+              className="mb-2 h-8 text-xs"
+            />
+            <div className="mb-2 flex items-center justify-between text-[11px] text-muted-foreground">
+              <span>{selectedStudentIds.size}명 선택</span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className="hover:text-foreground"
+                  onClick={() =>
+                    onSelectedStudentsChange(new Set(matchingStudents.map((s) => s.user_id)))
+                  }
+                >
+                  표시 전체 선택
+                </button>
+                <button
+                  type="button"
+                  className="hover:text-foreground"
+                  onClick={() => onSelectedStudentsChange(new Set())}
+                >
+                  비우기
+                </button>
+              </div>
+            </div>
+            <ScrollArea className="h-56 pr-1">
+              <ul className="space-y-0.5">
+                {matchingStudents.length === 0 && (
+                  <li className="px-1 py-4 text-center text-xs text-muted-foreground">
+                    학생이 없어요.
+                  </li>
+                )}
+                {matchingStudents.map((s) => (
+                  <li key={s.user_id}>
+                    <label className="flex cursor-pointer items-center gap-2 rounded-md px-1.5 py-1 text-xs hover:bg-muted/50">
+                      <Checkbox
+                        checked={selectedStudentIds.has(s.user_id)}
+                        onCheckedChange={() => toggleStudent(s.user_id)}
+                      />
+                      <span className="min-w-0 flex-1 truncate">
+                        {s.display_name ?? s.email ?? s.user_id}
+                      </span>
+                      {s.top_level && (
+                        <span className="rounded bg-secondary px-1 py-0.5 text-[10px] text-secondary-foreground">
+                          {LEVEL_LABEL[s.top_level] ?? s.top_level}
+                        </span>
+                      )}
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            </ScrollArea>
+          </PopoverContent>
+        </Popover>
+
+        <div className="ml-auto flex items-center gap-2 text-[11px] text-muted-foreground">
+          범위: <span className="tabular-nums text-foreground">{filteredCount}</span> / {totalCount}명
+          {hasAnyFilter && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-[11px]"
+              onClick={() => {
+                onDateFromChange("");
+                onDateToChange("");
+                onLevelChange("all");
+                onSelectedStudentsChange(new Set());
+              }}
+            >
+              초기화
+            </Button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
