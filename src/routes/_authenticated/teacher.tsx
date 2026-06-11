@@ -738,7 +738,7 @@ function ReportExportButtons({
 </style></head><body>
   <div class="noprint"><button onclick="window.print()">PDF로 저장 / 인쇄</button></div>
   <h1>학생 학습 리포트</h1>
-  <div class="meta">생성일: ${stamp}</div>
+  <div class="meta">생성일: ${stamp} · 범위: ${esc(scopeLabel)}</div>
   <div class="summary">
     <div><span>등록 학생</span><b>${totalStudents}</b></div>
     <div><span>활동 학생</span><b>${activeStudents}</b></div>
