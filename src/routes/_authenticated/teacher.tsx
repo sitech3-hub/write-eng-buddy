@@ -102,14 +102,27 @@ function TeacherDashboard() {
   const fetchOverview = useServerFn(getTeacherOverview);
   const [hasSession, setHasSession] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [levelFilter, setLevelFilter] = useState<string>("all");
-  const [typeFilter, setTypeFilter] = useState<string>("all");
   const [openThreadId, setOpenThreadId] = useState<string | null>(null);
+
+  // Load persisted filters from localStorage
+  const initialFilters = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      return JSON.parse(localStorage.getItem("teacher-dashboard-filters") || "null");
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const [levelFilter, setLevelFilter] = useState<string>(initialFilters?.levelFilter ?? "all");
+  const [typeFilter, setTypeFilter] = useState<string>(initialFilters?.typeFilter ?? "all");
   // Date range (YYYY-MM-DD, inclusive). Empty string = unbounded.
-  const [dateFrom, setDateFrom] = useState<string>("");
-  const [dateTo, setDateTo] = useState<string>("");
+  const [dateFrom, setDateFrom] = useState<string>(initialFilters?.dateFrom ?? "");
+  const [dateTo, setDateTo] = useState<string>(initialFilters?.dateTo ?? "");
   // Selected student ids (empty = "all matching")
-  const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
+  const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(
+    new Set(initialFilters?.selectedStudentIds ?? []),
+  );
 
   useEffect(() => {
     let active = true;
