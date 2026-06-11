@@ -140,6 +140,21 @@ function TeacherDashboard() {
     };
   }, [navigate]);
 
+  // Persist filters to localStorage
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem(
+      "teacher-dashboard-filters",
+      JSON.stringify({
+        dateFrom,
+        dateTo,
+        levelFilter,
+        typeFilter,
+        selectedStudentIds: Array.from(selectedStudentIds),
+      }),
+    );
+  }, [dateFrom, dateTo, levelFilter, typeFilter, selectedStudentIds]);
+
   const { data, isLoading, error } = useQuery({
     queryKey: ["teacher-overview"],
     queryFn: () => fetchOverview(),
