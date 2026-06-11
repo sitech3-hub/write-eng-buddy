@@ -5,6 +5,11 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --breakpoint-sm: 640px;
+  --breakpoint-md: 768px;
+  --breakpoint-lg: 1024px;
+  --breakpoint-xl: 1280px;
+  --breakpoint-2xl: 1536px;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -59,7 +64,7 @@
   --border: oklch(0.93 0.003 260);
   --input: oklch(0.93 0.003 260);
   --ring: oklch(0.4 0.005 260);
-  --sidebar: oklch(0.985 0.002 260);
+  --sidebar: oklch(0.97 0.003 260);
   --sidebar-foreground: oklch(0.22 0.005 260);
   --sidebar-primary: oklch(0.22 0.005 260);
   --sidebar-primary-foreground: oklch(0.99 0 0);
