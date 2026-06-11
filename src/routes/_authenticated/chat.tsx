@@ -145,7 +145,7 @@ function ChatLayout() {
 
   return (
     <div className="flex h-screen bg-background">
-      <aside className="hidden w-72 flex-col border-r bg-sidebar md:flex">
+      <aside className="hidden h-full w-72 flex-col border-r border-sidebar-border bg-sidebar md:flex">
         {sidebarBody}
       </aside>
 
