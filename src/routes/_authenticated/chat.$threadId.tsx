@@ -1,9 +1,9 @@
-import { createFileRoute, useParams } from "@tanstack/react-router";
+import { createFileRoute, useParams, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState, useMemo } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import ReactMarkdown from "react-markdown";
-import { Send, Download, FileText, Printer, AlertTriangle } from "lucide-react";
+import { Send, Download, FileText, Printer, AlertTriangle, Check } from "lucide-react";
 import { useServerFn } from "@tanstack/react-start";
 import { getModelStatus } from "@/lib/ai-status.functions";
 import { toast } from "sonner";
