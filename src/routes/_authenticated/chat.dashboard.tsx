@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { MessageSquare, Sparkles, BookOpen, Calendar } from "lucide-react";
+import { MessageSquare, Sparkles, BookOpen, Calendar, ChevronRight } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 
@@ -96,7 +96,7 @@ function MyDashboardPage() {
                 <Link
                   to="/chat/$threadId"
                   params={{ threadId: t.id }}
-                  className="flex items-center gap-3 px-4 py-3 transition hover:bg-muted/40"
+                  className="group flex items-center gap-3 rounded-md px-4 py-3 transition hover:bg-muted/40"
                 >
                   <MessageSquare className="h-4 w-4 shrink-0 text-muted-foreground" />
                   <div className="min-w-0 flex-1">
@@ -106,6 +106,7 @@ function MyDashboardPage() {
                       {new Date(t.updated_at).toLocaleDateString("ko-KR")}
                     </p>
                   </div>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/40 transition group-hover:text-muted-foreground" />
                 </Link>
               </li>
             ))}
