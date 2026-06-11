@@ -17,13 +17,16 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { ArrowLeft, ChevronRight, FileText, MessageSquare, Printer, Search, Users, X } from "lucide-react";
+import { ArrowLeft, CalendarRange, ChevronRight, FileText, Filter, MessageSquare, Printer, Search, Users, X } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { getTeacherOverview, type StudentRow } from "@/lib/teacher.functions";
 import { isTeacherEmail } from "@/lib/teacher-config";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Select,
   SelectContent,
