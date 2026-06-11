@@ -74,6 +74,13 @@ function ChatLayout() {
         <Button onClick={handleNew} variant="outline" className="w-full justify-start gap-2 rounded-lg border-dashed font-normal" size="sm">
           <Plus className="h-3.5 w-3.5" /> 새 연습 시작
         </Button>
+        <Link
+          to="/dashboard"
+          onClick={() => setMobileOpen(false)}
+          className="flex w-full items-center gap-2 rounded-lg border bg-card px-3 py-1.5 text-sm font-normal text-sidebar-foreground/80 transition hover:border-foreground/40 hover:text-sidebar-foreground"
+        >
+          <LayoutDashboard className="h-3.5 w-3.5" /> 나의 대시보드
+        </Link>
         {isTeacher && (
           <Link
             to="/teacher"
