@@ -653,6 +653,8 @@ function ChatToolbar({
     w.document.close();
   };
 
+  const navigate = useNavigate();
+
   return (
     <>
       <div className="border-b bg-background">
@@ -660,16 +662,26 @@ function ChatToolbar({
           <span className="text-xs text-muted-foreground">
             내가 쓴 영어 {count}문장{totalWordCount > 0 ? ` · 약 ${totalWordCount} 단어` : ""}
           </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setOpen(true)}
-            disabled={count === 0}
-            className="h-8 gap-1.5 text-xs"
-          >
-            <Download className="h-3.5 w-3.5" />
-            내 글 다운로드
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setOpen(true)}
+              disabled={count === 0}
+              className="h-8 gap-1.5 text-xs"
+            >
+              <Download className="h-3.5 w-3.5" />
+              내 글 다운로드
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => navigate({ to: "/chat" })}
+              className="h-8 gap-1.5 text-xs"
+            >
+              <Check className="h-3.5 w-3.5" />
+              연습 끝내기
+            </Button>
+          </div>
         </div>
       </div>
 
