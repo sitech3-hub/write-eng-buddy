@@ -37,6 +37,13 @@ function startOfWeek(d: Date) {
 }
 
 function MyDashboardPage() {
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate({ to: "/login" });
+  };
+
   const { data: threads = [], isLoading } = useQuery<ThreadRow[]>({
     queryKey: ["my-threads-dashboard"],
     queryFn: async () => {
