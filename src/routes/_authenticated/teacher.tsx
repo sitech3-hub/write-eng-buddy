@@ -102,14 +102,27 @@ function TeacherDashboard() {
   const fetchOverview = useServerFn(getTeacherOverview);
   const [hasSession, setHasSession] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [levelFilter, setLevelFilter] = useState<string>("all");
-  const [typeFilter, setTypeFilter] = useState<string>("all");
   const [openThreadId, setOpenThreadId] = useState<string | null>(null);
+
+  // Load persisted filters from localStorage
+  const initialFilters = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    try {
+      return JSON.parse(localStorage.getItem("teacher-dashboard-filters") || "null");
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const [levelFilter, setLevelFilter] = useState<string>(initialFilters?.levelFilter ?? "all");
+  const [typeFilter, setTypeFilter] = useState<string>(initialFilters?.typeFilter ?? "all");
   // Date range (YYYY-MM-DD, inclusive). Empty string = unbounded.
-  const [dateFrom, setDateFrom] = useState<string>("");
-  const [dateTo, setDateTo] = useState<string>("");
+  const [dateFrom, setDateFrom] = useState<string>(initialFilters?.dateFrom ?? "");
+  const [dateTo, setDateTo] = useState<string>(initialFilters?.dateTo ?? "");
   // Selected student ids (empty = "all matching")
-  const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(new Set());
+  const [selectedStudentIds, setSelectedStudentIds] = useState<Set<string>>(
+    new Set(initialFilters?.selectedStudentIds ?? []),
+  );
 
   useEffect(() => {
     let active = true;
@@ -126,6 +139,21 @@ function TeacherDashboard() {
       sub.subscription.unsubscribe();
     };
   }, [navigate]);
+
+  // Persist filters to localStorage
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem(
+      "teacher-dashboard-filters",
+      JSON.stringify({
+        dateFrom,
+        dateTo,
+        levelFilter,
+        typeFilter,
+        selectedStudentIds: Array.from(selectedStudentIds),
+      }),
+    );
+  }, [dateFrom, dateTo, levelFilter, typeFilter, selectedStudentIds]);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["teacher-overview"],
@@ -239,6 +267,11 @@ function TeacherDashboard() {
         onSelectedStudentsChange={setSelectedStudentIds}
         filteredCount={filteredStudents.length}
         totalCount={totalStudents}
+        onResetFilters={() => {
+          if (typeof window !== "undefined") {
+            localStorage.removeItem("teacher-dashboard-filters");
+          }
+        }}
       />
 
       <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -803,6 +836,7 @@ function ScopeFilterBar({
   onSelectedStudentsChange,
   filteredCount,
   totalCount,
+  onResetFilters,
 }: {
   dateFrom: string;
   dateTo: string;
@@ -815,6 +849,7 @@ function ScopeFilterBar({
   onSelectedStudentsChange: (s: Set<string>) => void;
   filteredCount: number;
   totalCount: number;
+  onResetFilters?: () => void;
 }) {
   const [studentSearch, setStudentSearch] = useState("");
 
@@ -994,6 +1029,7 @@ function ScopeFilterBar({
                 onDateToChange("");
                 onLevelChange("all");
                 onSelectedStudentsChange(new Set());
+                onResetFilters?.();
               }}
             >
               초기화
