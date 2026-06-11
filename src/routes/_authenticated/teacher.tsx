@@ -836,6 +836,7 @@ function ScopeFilterBar({
   onSelectedStudentsChange,
   filteredCount,
   totalCount,
+  onResetFilters,
 }: {
   dateFrom: string;
   dateTo: string;
@@ -848,6 +849,7 @@ function ScopeFilterBar({
   onSelectedStudentsChange: (s: Set<string>) => void;
   filteredCount: number;
   totalCount: number;
+  onResetFilters?: () => void;
 }) {
   const [studentSearch, setStudentSearch] = useState("");
 
