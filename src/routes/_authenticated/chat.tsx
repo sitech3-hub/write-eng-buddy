@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, Link, useNavigate, useParams } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { LogOut, Plus, MessageSquare, Trash2, Menu, GraduationCap } from "lucide-react";
+import { LogOut, Plus, MessageSquare, Trash2, Menu, GraduationCap, LayoutDashboard } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
