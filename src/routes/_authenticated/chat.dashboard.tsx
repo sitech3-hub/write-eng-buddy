@@ -41,9 +41,10 @@ function MyDashboardPage() {
   const qc = useQueryClient();
 
   const handleSignOut = async () => {
+    qc.cancelQueries();
+    qc.removeQueries();
     await supabase.auth.signOut();
-    qc.clear();
-    navigate({ to: "/login" });
+    // AuthSync listener clears cache and navigates to /login
   };
 
   const { data: threads = [], isLoading } = useQuery<ThreadRow[]>({
