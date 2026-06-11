@@ -56,6 +56,7 @@ function ChatLayout() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
+    qc.clear();
     navigate({ to: "/login" });
   };
 
