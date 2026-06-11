@@ -28,6 +28,16 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -852,6 +862,7 @@ function ScopeFilterBar({
   onResetFilters?: () => void;
 }) {
   const [studentSearch, setStudentSearch] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const setPreset = (days: number | null) => {
     if (days === null) {
@@ -1020,20 +1031,41 @@ function ScopeFilterBar({
         <div className="ml-auto flex items-center gap-2 text-[11px] text-muted-foreground">
           범위: <span className="tabular-nums text-foreground">{filteredCount}</span> / {totalCount}명
           {hasAnyFilter && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 px-2 text-[11px]"
-              onClick={() => {
-                onDateFromChange("");
-                onDateToChange("");
-                onLevelChange("all");
-                onSelectedStudentsChange(new Set());
-                onResetFilters?.();
-              }}
-            >
-              초기화
-            </Button>
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-[11px]"
+                onClick={() => setConfirmOpen(true)}
+              >
+                초기화
+              </Button>
+              <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>필터를 초기화할까요?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      저장된 날짜 범위, 반, 학생 선택 필터가 모두 지워집니다. 이 작업은 되돌릴 수 없어요.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel onClick={() => setConfirmOpen(false)}>취소</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => {
+                        onDateFromChange("");
+                        onDateToChange("");
+                        onLevelChange("all");
+                        onSelectedStudentsChange(new Set());
+                        onResetFilters?.();
+                        setConfirmOpen(false);
+                      }}
+                    >
+                      초기화
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </>
           )}
         </div>
       </div>
