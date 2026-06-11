@@ -55,9 +55,10 @@ function ChatLayout() {
   };
 
   const handleSignOut = async () => {
+    qc.cancelQueries();
+    qc.removeQueries();
     await supabase.auth.signOut();
-    qc.clear();
-    navigate({ to: "/login" });
+    // AuthSync listener clears cache and navigates to /login
   };
 
   const isTeacher = isTeacherEmail(email);
