@@ -128,8 +128,13 @@ function ChatLayout() {
       <div className="border-t px-4 py-3">
         <div className="flex items-center justify-between gap-2">
           <span className="truncate text-xs text-sidebar-foreground/55">{email}</span>
-          <button onClick={handleSignOut} className="text-sidebar-foreground/50 transition hover:text-sidebar-foreground" aria-label="로그아웃">
+          <button
+            onClick={handleSignOut}
+            className="flex items-center gap-1 rounded-md px-2 py-1 text-xs text-sidebar-foreground/60 transition hover:bg-sidebar-accent hover:text-sidebar-foreground"
+            aria-label="로그아웃"
+          >
             <LogOut className="h-3.5 w-3.5" />
+            <span>로그아웃</span>
           </button>
         </div>
       </div>

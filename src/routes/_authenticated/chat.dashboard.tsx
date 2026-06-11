@@ -1,8 +1,9 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { MessageSquare, Sparkles, BookOpen, Calendar, ChevronRight } from "lucide-react";
+import { MessageSquare, Sparkles, BookOpen, Calendar, ChevronRight, LogOut } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/chat/dashboard")({
   component: MyDashboardPage,
@@ -36,6 +37,13 @@ function startOfWeek(d: Date) {
 }
 
 function MyDashboardPage() {
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate({ to: "/login" });
+  };
+
   const { data: threads = [], isLoading } = useQuery<ThreadRow[]>({
     queryKey: ["my-threads-dashboard"],
     queryFn: async () => {
@@ -60,9 +68,20 @@ function MyDashboardPage() {
 
   return (
     <div className="mx-auto w-full max-w-3xl flex-1 overflow-y-auto px-6 py-10">
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold tracking-tight">나의 대시보드</h1>
-        <p className="mt-1 text-sm text-muted-foreground">지금까지의 영어 쓰기 연습 기록을 한눈에 볼 수 있어요.</p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">나의 대시보드</h1>
+          <p className="mt-1 text-sm text-muted-foreground">지금까지의 영어 쓰기 연습 기록을 한눈에 볼 수 있어요.</p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleSignOut}
+          className="gap-1.5"
+        >
+          <LogOut className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">로그아웃</span>
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
