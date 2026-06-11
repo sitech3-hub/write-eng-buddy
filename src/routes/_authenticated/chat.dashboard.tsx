@@ -1,8 +1,9 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { MessageSquare, Sparkles, BookOpen, Calendar, ChevronRight } from "lucide-react";
+import { MessageSquare, Sparkles, BookOpen, Calendar, ChevronRight, LogOut } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
 
 export const Route = createFileRoute("/_authenticated/chat/dashboard")({
   component: MyDashboardPage,
