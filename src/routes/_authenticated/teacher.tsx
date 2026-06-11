@@ -623,17 +623,40 @@ function ReportExportButtons({
   activeStudents,
   totalThreads,
   totalMessages,
+  dateFrom,
+  dateTo,
+  levelFilter,
+  typeFilter,
+  selectedCount,
 }: {
   students: StudentRow[];
   totalStudents: number;
   activeStudents: number;
   totalThreads: number;
   totalMessages: number;
+  dateFrom: string;
+  dateTo: string;
+  levelFilter: string;
+  typeFilter: string;
+  selectedCount: number;
 }) {
   const stamp = useMemo(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   }, []);
+
+  const scopeLabel = useMemo(() => {
+    const parts: string[] = [];
+    if (dateFrom || dateTo) {
+      parts.push(`기간 ${dateFrom || "처음"} ~ ${dateTo || "오늘"}`);
+    } else {
+      parts.push("기간 전체");
+    }
+    parts.push(`반 ${levelFilter === "all" ? "전체" : LEVEL_LABEL[levelFilter] ?? levelFilter}`);
+    parts.push(`유형 ${typeFilter === "all" ? "전체" : TYPE_LABEL[typeFilter] ?? typeFilter}`);
+    parts.push(`학생 ${selectedCount === 0 ? "전체 매칭" : `${selectedCount}명 선택`}`);
+    return parts.join(" · ");
+  }, [dateFrom, dateTo, levelFilter, typeFilter, selectedCount]);
 
   const csvEscape = (v: unknown) => {
     const s = v == null ? "" : String(v);
