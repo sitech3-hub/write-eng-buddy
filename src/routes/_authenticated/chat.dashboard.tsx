@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { MessageSquare, Sparkles, BookOpen, Calendar, ChevronRight, LogOut } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -38,9 +38,11 @@ function startOfWeek(d: Date) {
 
 function MyDashboardPage() {
   const navigate = useNavigate();
+  const qc = useQueryClient();
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
+    qc.clear();
     navigate({ to: "/login" });
   };
 
