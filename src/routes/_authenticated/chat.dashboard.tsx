@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { MessageSquare, Sparkles, BookOpen, Calendar } from "lucide-react";
+import { MessageSquare, Sparkles, BookOpen, Calendar, ChevronRight } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 
