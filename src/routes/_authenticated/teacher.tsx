@@ -784,3 +784,223 @@ function ReportExportButtons({
     </div>
   );
 }
+
+function todayYmd(offsetDays = 0): string {
+  const d = new Date();
+  d.setDate(d.getDate() - offsetDays);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function ScopeFilterBar({
+  dateFrom,
+  dateTo,
+  onDateFromChange,
+  onDateToChange,
+  levelFilter,
+  onLevelChange,
+  students,
+  selectedStudentIds,
+  onSelectedStudentsChange,
+  filteredCount,
+  totalCount,
+}: {
+  dateFrom: string;
+  dateTo: string;
+  onDateFromChange: (v: string) => void;
+  onDateToChange: (v: string) => void;
+  levelFilter: string;
+  onLevelChange: (v: string) => void;
+  students: StudentRow[];
+  selectedStudentIds: Set<string>;
+  onSelectedStudentsChange: (s: Set<string>) => void;
+  filteredCount: number;
+  totalCount: number;
+}) {
+  const [studentSearch, setStudentSearch] = useState("");
+
+  const setPreset = (days: number | null) => {
+    if (days === null) {
+      onDateFromChange("");
+      onDateToChange("");
+    } else {
+      onDateFromChange(todayYmd(days - 1));
+      onDateToChange(todayYmd(0));
+    }
+  };
+
+  const toggleStudent = (id: string) => {
+    const next = new Set(selectedStudentIds);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    onSelectedStudentsChange(next);
+  };
+
+  const matchingStudents = useMemo(() => {
+    const q = studentSearch.trim().toLowerCase();
+    if (!q) return students;
+    return students.filter(
+      (s) =>
+        (s.display_name ?? "").toLowerCase().includes(q) ||
+        (s.email ?? "").toLowerCase().includes(q),
+    );
+  }, [students, studentSearch]);
+
+  const hasAnyFilter =
+    !!dateFrom || !!dateTo || levelFilter !== "all" || selectedStudentIds.size > 0;
+
+  return (
+    <div className="mb-6 rounded-xl border bg-card p-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+          <Filter className="h-3.5 w-3.5" /> 내보내기 범위
+        </div>
+
+        <div className="flex flex-wrap items-center gap-1.5">
+          <CalendarRange className="h-3.5 w-3.5 text-muted-foreground" />
+          <Input
+            type="date"
+            value={dateFrom}
+            max={dateTo || undefined}
+            onChange={(e) => onDateFromChange(e.target.value)}
+            className="h-8 w-[140px] text-xs"
+          />
+          <span className="text-xs text-muted-foreground">~</span>
+          <Input
+            type="date"
+            value={dateTo}
+            min={dateFrom || undefined}
+            onChange={(e) => onDateToChange(e.target.value)}
+            className="h-8 w-[140px] text-xs"
+          />
+          <div className="flex gap-1">
+            {[
+              { label: "7일", days: 7 },
+              { label: "30일", days: 30 },
+              { label: "90일", days: 90 },
+            ].map((p) => (
+              <Button
+                key={p.label}
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 px-2 text-[11px]"
+                onClick={() => setPreset(p.days)}
+              >
+                {p.label}
+              </Button>
+            ))}
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-[11px]"
+              onClick={() => setPreset(null)}
+            >
+              전체
+            </Button>
+          </div>
+        </div>
+
+        <div className="h-5 w-px bg-border" />
+
+        <Select value={levelFilter} onValueChange={onLevelChange}>
+          <SelectTrigger className="h-8 w-32 text-xs">
+            <SelectValue placeholder="반(레벨)" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">전체 반</SelectItem>
+            {Object.entries(LEVEL_LABEL).map(([k, v]) => (
+              <SelectItem key={k} value={k}>
+                {v}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-8 gap-1.5 text-xs">
+              <Users className="h-3.5 w-3.5" />
+              학생 {selectedStudentIds.size === 0 ? "전체" : `${selectedStudentIds.size}명 선택`}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-72 p-2">
+            <Input
+              placeholder="이름/이메일 검색"
+              value={studentSearch}
+              onChange={(e) => setStudentSearch(e.target.value)}
+              className="mb-2 h-8 text-xs"
+            />
+            <div className="mb-2 flex items-center justify-between text-[11px] text-muted-foreground">
+              <span>{selectedStudentIds.size}명 선택</span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  className="hover:text-foreground"
+                  onClick={() =>
+                    onSelectedStudentsChange(new Set(matchingStudents.map((s) => s.user_id)))
+                  }
+                >
+                  표시 전체 선택
+                </button>
+                <button
+                  type="button"
+                  className="hover:text-foreground"
+                  onClick={() => onSelectedStudentsChange(new Set())}
+                >
+                  비우기
+                </button>
+              </div>
+            </div>
+            <ScrollArea className="h-56 pr-1">
+              <ul className="space-y-0.5">
+                {matchingStudents.length === 0 && (
+                  <li className="px-1 py-4 text-center text-xs text-muted-foreground">
+                    학생이 없어요.
+                  </li>
+                )}
+                {matchingStudents.map((s) => (
+                  <li key={s.user_id}>
+                    <label className="flex cursor-pointer items-center gap-2 rounded-md px-1.5 py-1 text-xs hover:bg-muted/50">
+                      <Checkbox
+                        checked={selectedStudentIds.has(s.user_id)}
+                        onCheckedChange={() => toggleStudent(s.user_id)}
+                      />
+                      <span className="min-w-0 flex-1 truncate">
+                        {s.display_name ?? s.email ?? s.user_id}
+                      </span>
+                      {s.top_level && (
+                        <span className="rounded bg-secondary px-1 py-0.5 text-[10px] text-secondary-foreground">
+                          {LEVEL_LABEL[s.top_level] ?? s.top_level}
+                        </span>
+                      )}
+                    </label>
+                  </li>
+                ))}
+              </ul>
+            </ScrollArea>
+          </PopoverContent>
+        </Popover>
+
+        <div className="ml-auto flex items-center gap-2 text-[11px] text-muted-foreground">
+          범위: <span className="tabular-nums text-foreground">{filteredCount}</span> / {totalCount}명
+          {hasAnyFilter && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-[11px]"
+              onClick={() => {
+                onDateFromChange("");
+                onDateToChange("");
+                onLevelChange("all");
+                onSelectedStudentsChange(new Set());
+              }}
+            >
+              초기화
+            </Button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
